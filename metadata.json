@@ -1,0 +1,6 @@
+{
+  "name": "AURA AI Studio",
+  "description": "Redefining Commercials with AI. High-End Product Ads, Cinematic Videos, and AI Video Production. Elevate your brand's aura.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
