@@ -148,3 +148,55 @@ export function TwitterIcon({ className = '', style }: { className?: string; sty
     </svg>
   );
 }
+
+export function PlayIcon({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+export function ShieldIcon({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <polyline points="9 12 11 14 15 10" />
+    </svg>
+  );
+}
+

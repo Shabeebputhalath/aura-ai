@@ -65,13 +65,13 @@ export default function Footer({ onOpenModal, scrollTo }: FooterProps) {
                 </AnimatedLink>
               </li>
               <li>
-                <AnimatedLink href="#pricing" onClick={() => scrollTo('pricing')}>
-                  Pricing Calculator
+                <AnimatedLink href="#about" onClick={() => scrollTo('about')}>
+                  About
                 </AnimatedLink>
               </li>
               <li>
-                <AnimatedLink href="#about" onClick={() => scrollTo('about')}>
-                  About
+                <AnimatedLink href="#contact" onClick={() => scrollTo('contact')}>
+                  Contact
                 </AnimatedLink>
               </li>
             </ul>

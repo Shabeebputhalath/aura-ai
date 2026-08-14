@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { LogoMark, GridIcon } from './Icons';
 
 interface HeaderProps {
@@ -8,43 +8,16 @@ interface HeaderProps {
   onOpenMenu: () => void;
   onOpenModal: () => void;
   scrollTo: (id: string) => void;
+  currentId?: string;
 }
 
-export default function Header({ ready, onOpenMenu, onOpenModal, scrollTo }: HeaderProps) {
-  const [timeStr, setTimeStr] = useState('9:41am');
-  const [dateStr, setDateStr] = useState('12 March, 2025');
+export default function Header({ ready, onOpenMenu, onOpenModal, scrollTo, currentId = 'home' }: HeaderProps) {
   const [logoHover, setLogoHover] = useState(false);
   const [menuHover, setMenuHover] = useState(false);
-
-  useEffect(() => {
-    function updateClock() {
-      const now = new Date();
-      const hoursRaw = now.getHours();
-      const hours = hoursRaw % 12 || 12;
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const meridiem = hoursRaw >= 12 ? 'pm' : 'am';
-      setTimeStr(`${hours}:${minutes}${meridiem}`);
-
-      const day = now.getDate();
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      const month = monthNames[now.getMonth()];
-      const year = now.getFullYear();
-      setDateStr(`${day} ${month}, ${year}`);
-    }
-
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const navItems: { label: string; id: string; current?: boolean; isModal?: boolean; hasDropdown?: boolean }[] = [
     { label: 'Home', id: 'home', current: true },
     { label: 'Work', id: 'works' },
-    { label: 'Services', id: 'services' },
-    { label: 'Pricing', id: 'pricing' },
     { label: 'About', id: 'about' },
     { label: 'Contact', id: 'contact' },
   ];
@@ -75,6 +48,7 @@ export default function Header({ ready, onOpenMenu, onOpenModal, scrollTo }: Hea
         <nav className="hidden lg:flex items-center">
           <ul className="flex items-center gap-8 text-sm font-medium">
             {navItems.map((item) => {
+              const isCurrent = item.id === currentId;
               if (item.isModal) {
                 return (
                   <li key={item.label}>
@@ -93,7 +67,7 @@ export default function Header({ ready, onOpenMenu, onOpenModal, scrollTo }: Hea
                   <button
                     onClick={() => scrollTo(item.id)}
                     className={`flex items-center gap-1 transition-all duration-300 hover:-translate-y-0.5 ${
-                      item.current ? 'text-[#111111] font-semibold' : 'text-[#111111]/80 hover:text-[#111111]'
+                      isCurrent ? 'text-[#111111] font-semibold underline underline-offset-4' : 'text-[#111111]/80 hover:text-[#111111]'
                     }`}
                   >
                     <span>{item.label}</span>
@@ -105,17 +79,8 @@ export default function Header({ ready, onOpenMenu, onOpenModal, scrollTo }: Hea
           </ul>
         </nav>
 
-        {/* Right — Clock Chip & Menu */}
+        {/* Right — Menu Button */}
         <div className="flex items-center gap-3">
-          {/* Live Clock Chip */}
-          <div className="hidden md:flex items-center gap-3 border border-[#e6e5e2]/80 bg-white/40 backdrop-blur-md rounded-[0.875rem] px-3 py-2 text-xs text-[#111111]/70">
-            <span className="text-[#111111]/45 font-normal">Local time</span>
-            <span className="min-w-[3.5rem] tabular-nums font-medium text-[#111111]">{timeStr}</span>
-            <span className="text-[#111111]/30">•</span>
-            <span className="font-medium text-[#111111]">{dateStr}</span>
-          </div>
-
-          {/* Menu Button */}
           <button
             onClick={onOpenMenu}
             onMouseEnter={() => setMenuHover(true)}

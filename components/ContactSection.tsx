@@ -30,6 +30,32 @@ export default function ContactSection({ onOpenMenu, isStandalonePage = false }:
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Save submission to localStorage for Admin Requests view
+    try {
+      const existingRaw = localStorage.getItem('aura_inquiries');
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      
+      const newInquiry = {
+        id: `req-${Math.floor(1000 + Math.random() * 9000)}`,
+        clientName: formData.name || 'Anonymous Client',
+        company: formData.company || 'Private Client',
+        service: formData.service || 'Custom AI Video Production',
+        budget: '₹1,50,000 (Inquired)',
+        status: 'pending',
+        time: 'Just now',
+        submittedDate: new Date().toISOString().split('T')[0],
+        email: formData.email,
+        website: formData.website,
+        avatar: `https://images.unsplash.com/photo-${1530000000000 + Math.floor(Math.random()*100000)}?w=150&auto=format&fit=crop&q=80`,
+        details: formData.description || 'Client submitted contact form inquiry on AURA AI Studio.',
+      };
+
+      localStorage.setItem('aura_inquiries', JSON.stringify([newInquiry, ...existing]));
+    } catch (err) {
+      console.error('Failed to save submission:', err);
+    }
+
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
@@ -37,7 +63,7 @@ export default function ContactSection({ onOpenMenu, isStandalonePage = false }:
   };
 
   return (
-    <section id="contact" className="bg-white text-[#111111] min-h-screen py-16 sm:py-24 px-6 sm:px-12 md:px-16 lg:px-24 flex flex-col justify-between font-sans selection:bg-[#111111] selection:text-white border-t border-[#e6e5e2]">
+    <section id="contact" className="bg-white text-[#111111] min-h-screen pt-28 sm:pt-36 pb-16 sm:pb-24 px-6 sm:px-12 md:px-16 lg:px-24 flex flex-col justify-between font-sans selection:bg-[#111111] selection:text-white">
       <div>
         {/* Section Tag / Eyebrow */}
         <div className="flex items-center gap-3 mb-6 sm:mb-8">

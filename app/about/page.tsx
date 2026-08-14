@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import AdaptiveGrid from '@/components/AdaptiveGrid';
 import Header from '@/components/Header';
-import ContactSection from '@/components/ContactSection';
+import AboutPageContent from '@/components/AboutPageContent';
+import Stats from '@/components/Stats';
+import FAQ from '@/components/FAQ';
 import Footer from '@/components/Footer';
 import NavMenu from '@/components/NavMenu';
 
-export default function ContactPage() {
+export default function AboutPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleNavigate = (id: string) => {
@@ -16,38 +18,49 @@ export default function ContactPage() {
     } else if (id === 'works') {
       window.location.href = '/works';
     } else if (id === 'about') {
-      window.location.href = '/about';
-    } else if (id === 'contact') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (id === 'contact') {
+      window.location.href = '/contact';
     } else {
       window.location.href = `/#${id}`;
     }
   };
 
+  const handleOpenContact = () => {
+    window.location.href = '/contact';
+  };
+
   return (
-    <div className="relative min-h-screen bg-white text-[#111111]">
+    <div className="relative min-h-screen bg-white text-[#111111] font-sans selection:bg-[#111111] selection:text-white">
       <AdaptiveGrid />
 
-      {/* Header with active 'contact' tab */}
+      {/* Header with active 'about' tab */}
       <Header
         ready={true}
-        currentId="contact"
+        currentId="about"
         onOpenMenu={() => setIsMenuOpen(true)}
-        onOpenModal={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onOpenModal={handleOpenContact}
         scrollTo={handleNavigate}
       />
 
-      {/* Main Contact Form Section */}
-      <main id="main">
-        <ContactSection
-          onOpenMenu={() => setIsMenuOpen(true)}
-          isStandalonePage={true}
-        />
+      {/* Main Content */}
+      <main id="main" className="pt-24 sm:pt-28">
+        <AboutPageContent ready={true} />
+
+        {/* Studio Impact & Metrics */}
+        <div className="border-t border-[#e6e5e2]/80">
+          <Stats />
+        </div>
+
+        {/* FAQ Section */}
+        <div className="border-t border-[#e6e5e2]/80">
+          <FAQ />
+        </div>
       </main>
 
       {/* Footer */}
       <Footer
-        onOpenModal={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onOpenModal={handleOpenContact}
         scrollTo={handleNavigate}
       />
 
@@ -55,7 +68,7 @@ export default function ContactPage() {
       <NavMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
-        onOpenModal={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onOpenModal={handleOpenContact}
         scrollTo={handleNavigate}
         stopScroll={() => {}}
         startScroll={() => {}}

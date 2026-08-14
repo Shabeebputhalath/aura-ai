@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { DEFAULT_PRICING_CONFIG, FullPricingConfig } from './admin/PricingManager';
 
 interface PricingProps {
   onOpenModalWithConfig?: (configSummary: string) => void;
@@ -50,14 +51,45 @@ export default function Pricing({ onOpenModalWithConfig }: PricingProps) {
   const [durationSeconds, setDurationSeconds] = useState<number>(30);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [isExpress, setIsExpress] = useState<boolean>(false);
+  const [ratesConfig, setRatesConfig] = useState<FullPricingConfig>(() => {
+    if (typeof window === 'undefined') return DEFAULT_PRICING_CONFIG;
+    try {
+      const stored = localStorage.getItem('aura_pricing_config');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.tiers) return parsed;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return DEFAULT_PRICING_CONFIG;
+  });
+
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const stored = localStorage.getItem('aura_pricing_config');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.tiers) setRatesConfig(parsed);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    window.addEventListener('aura_pricing_updated', handleSync);
+    return () => window.removeEventListener('aura_pricing_updated', handleSync);
+  }, []);
 
   // Rate calculations
-  // Starter (Reels): ₹40/s
-  const starterPrice = durationSeconds * 40;
-  // Business (Product Ads): ₹60/s
-  const businessPrice = durationSeconds * 60;
-  // Enterprise (Storytelling & 3D): ₹80/s
-  const enterprisePrice = durationSeconds * 80;
+  const starterTier = ratesConfig.tiers.find((t) => t.id === 'starter') || DEFAULT_PRICING_CONFIG.tiers[0];
+  const businessTier = ratesConfig.tiers.find((t) => t.id === 'business') || DEFAULT_PRICING_CONFIG.tiers[1];
+  const enterpriseTier = ratesConfig.tiers.find((t) => t.id === 'enterprise') || DEFAULT_PRICING_CONFIG.tiers[2];
+
+  const starterPrice = durationSeconds * starterTier.ratePerSecond;
+  const businessPrice = durationSeconds * businessTier.ratePerSecond;
+  const enterprisePrice = durationSeconds * enterpriseTier.ratePerSecond;
 
   const toggleAddOn = (id: string) => {
     if (selectedAddOns.includes(id)) {
@@ -168,7 +200,7 @@ export default function Pricing({ onOpenModalWithConfig }: PricingProps) {
                   </span>
                 </div>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-[#b15f2c] bg-[#b15f2c]/10 px-2 py-0.5 rounded">
-                  ₹40 / second
+                  ₹{starterTier.ratePerSecond} / second
                 </span>
               </div>
 
@@ -242,7 +274,7 @@ export default function Pricing({ onOpenModalWithConfig }: PricingProps) {
                   </span>
                 </div>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-[#b15f2c] bg-[#b15f2c]/15 px-2 py-0.5 rounded">
-                  ₹60 / second
+                  ₹{businessTier.ratePerSecond} / second
                 </span>
               </div>
 
@@ -310,7 +342,7 @@ export default function Pricing({ onOpenModalWithConfig }: PricingProps) {
                   </span>
                 </div>
                 <span className="inline-block mt-1 text-[11px] font-semibold text-[#b15f2c] bg-[#b15f2c]/10 px-2 py-0.5 rounded">
-                  ₹80–₹100 / second
+                  ₹{enterpriseTier.ratePerSecond} / second
                 </span>
               </div>
 

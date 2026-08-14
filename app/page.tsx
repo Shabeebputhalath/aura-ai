@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import CreateBand from '@/components/CreateBand';
-import Portfolio from '@/components/Portfolio';
+import LandingProjectShowcase from '@/components/LandingProjectShowcase';
 import Services from '@/components/Services';
 import Pricing from '@/components/Pricing';
 import Stats from '@/components/Stats';
@@ -23,7 +23,7 @@ export default function Home() {
   const lenisRef = useRef<Lenis | null>(null);
 
   const handleOpenContact = useCallback(() => {
-    window.open('https://instagram.com/_aura_ai', '_blank');
+    window.location.href = '/contact';
   }, []);
 
   useEffect(() => {
@@ -71,6 +71,22 @@ export default function Home() {
   }, []);
 
   const handleScrollTo = useCallback((id: string) => {
+    if (id === 'works') {
+      window.location.href = '/works';
+      return;
+    }
+    if (id === 'about') {
+      window.location.href = '/about';
+      return;
+    }
+    if (id === 'contact') {
+      window.location.href = '/contact';
+      return;
+    }
+    if (id === 'home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const targetEl = document.getElementById(id);
     if (targetEl && lenisRef.current) {
       lenisRef.current.scrollTo(targetEl, { duration: 1.2 });
@@ -119,12 +135,11 @@ export default function Home() {
         />
         <About ready={ready} />
         <CreateBand />
-        <Portfolio />
+        <LandingProjectShowcase />
         <Services />
         <Pricing onOpenModalWithConfig={handleOpenContact} />
         <FAQ />
         <Stats />
-        <ContactSection onOpenMenu={() => setIsMenuOpen(true)} />
       </main>
 
       {/* Footer */}

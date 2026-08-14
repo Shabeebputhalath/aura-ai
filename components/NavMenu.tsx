@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { LogoMark, XIcon } from './Icons';
 
 interface NavMenuProps {
@@ -21,8 +21,6 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   { label: 'Home', id: 'home' },
   { label: 'Work', id: 'works' },
-  { label: 'Services', id: 'services' },
-  { label: 'Pricing Calculator', id: 'pricing' },
   { label: 'About', id: 'about' },
   { label: 'Contact', id: 'contact' },
 ];
@@ -35,23 +33,6 @@ export default function NavMenu({
   stopScroll,
   startScroll,
 }: NavMenuProps) {
-  const [timeStr, setTimeStr] = useState('9:41am');
-
-  useEffect(() => {
-    function updateClock() {
-      const now = new Date();
-      const hoursRaw = now.getHours();
-      const hours = hoursRaw % 12 || 12;
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const meridiem = hoursRaw >= 12 ? 'pm' : 'am';
-      setTimeStr(`${hours}:${minutes}${meridiem}`);
-    }
-
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     if (isOpen) {
       stopScroll();
@@ -141,8 +122,7 @@ export default function NavMenu({
       </div>
 
       {/* Bottom Bar */}
-      <div className="shell w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-white/10 px-5 py-6 sm:px-8 text-xs uppercase tracking-wider text-white/45">
-        <span>Local time — {timeStr}</span>
+      <div className="shell w-full flex items-center justify-end border-t border-white/10 px-5 py-6 sm:px-8 text-xs uppercase tracking-wider">
         <button
           onClick={handleStartProject}
           className="text-white/70 hover:text-white hover:underline transition-colors"
