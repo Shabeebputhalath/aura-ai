@@ -75,11 +75,11 @@ export default function About({ ready = true }: AboutProps) {
           <div className="lg:col-span-7 flex flex-col justify-between">
             
             {/* Main Statement */}
-            <h2 className="text-2xl sm:text-3xl lg:text-[38px] xl:text-[42px] font-semibold leading-[1.25] tracking-[-0.025em] text-[#111111] font-display">
-              <span className="text-[#111111] font-bold">
+            <h2 className="text-[32px] sm:text-[36px] lg:text-[40px] font-normal not-italic leading-[1.25] tracking-[-0.025em] text-[#111111] font-display">
+              <span className="text-[#111111] font-bold text-[32px] sm:text-[36px] lg:text-[40px]">
                 We partner with ambitious teams to ship
               </span>{' '}
-              <span className="text-[#111111]/45 font-normal">
+              <span className="text-[#111111]/45 font-normal italic text-[32px] sm:text-[36px] lg:text-[40px]">
                 digital products, brand systems, and the strategy that holds them together.
               </span>
             </h2>

@@ -131,6 +131,9 @@ export default function Footer({ onOpenModal, scrollTo }: FooterProps) {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-white/45">
           <p>© 2026 AURA AI Studio. Creative AI Videos | Professional Editing | Cinematic Storytelling.</p>
           <div className="flex items-center gap-6">
+            <AnimatedLink href="/admin" shiftAmount={3}>
+              Studio Admin
+            </AnimatedLink>
             <AnimatedLink href="#privacy" shiftAmount={3}>
               50% Advance Terms
             </AnimatedLink>

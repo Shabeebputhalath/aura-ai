@@ -59,7 +59,7 @@ export default function Hero({ ready, onOpenModal, scrollTo }: HeroProps) {
                 transitionDelay: ready ? '200ms' : '0ms',
               }}
             >
-              <Eyebrow tone="dark">AI Video Production Studio</Eyebrow>
+              <Eyebrow tone="dark" className="text-[11.76px]">AI Video Production Studio</Eyebrow>
             </div>
 
             {/* Main Headline (Line Reveal) */}
@@ -69,7 +69,7 @@ export default function Hero({ ready, onOpenModal, scrollTo }: HeroProps) {
               delay={250}
               lineStagger={120}
               lines={['Redefining', 'Commercials', 'with AI.']}
-              className="max-w-[18ch] text-[2.25rem] sm:text-[3rem] md:text-[3.75rem] font-semibold leading-[0.98] tracking-[-0.02em] text-[#111111]"
+              className="max-w-[18ch] text-[48.98px] font-bold leading-[0.98] tracking-[-0.02em] text-[#111111]"
             />
 
             {/* Rating Row */}
@@ -86,7 +86,7 @@ export default function Hero({ ready, onOpenModal, scrollTo }: HeroProps) {
                   <Star key={i} className="w-4 h-4" />
                 ))}
               </div>
-              <span className="text-sm font-medium text-[#111111]/70">
+              <span className="text-[8.76px] sm:text-xs font-medium text-[#111111]/70">
                 High-End Product Ads & Cinematic Videos • 40+ Posts & Campaigns
               </span>
             </div>
@@ -100,10 +100,10 @@ export default function Hero({ ready, onOpenModal, scrollTo }: HeroProps) {
                 transitionDelay: ready ? '750ms' : '0ms',
               }}
             >
-              <PillButton variant="dark" arrow="right" onClick={onOpenModal}>
+              <PillButton variant="dark" arrow="right" onClick={onOpenModal} className="text-[12.76px]">
                 Inquire via DM / Form
               </PillButton>
-              <PillButton variant="outline" onClick={() => scrollTo('pricing')}>
+              <PillButton variant="outline" onClick={() => scrollTo('pricing')} className="text-[12.76px]">
                 View Pricing
               </PillButton>
             </div>

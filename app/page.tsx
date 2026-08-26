@@ -13,6 +13,7 @@ import Services from '@/components/Services';
 import Pricing from '@/components/Pricing';
 import Stats from '@/components/Stats';
 import FAQ from '@/components/FAQ';
+import LandingTestimonials from '@/components/LandingTestimonials';
 import ContactSection from '@/components/ContactSection';
 import Footer from '@/components/Footer';
 import NavMenu from '@/components/NavMenu';
@@ -138,6 +139,7 @@ export default function Home() {
         <LandingProjectShowcase />
         <Services />
         <Pricing onOpenModalWithConfig={handleOpenContact} />
+        <LandingTestimonials />
         <FAQ />
         <Stats />
       </main>
