@@ -18,6 +18,10 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Database,
+  Check,
+  Server,
+  Activity,
 } from 'lucide-react';
 import { AdminStudioSettings } from '../types';
 
@@ -27,6 +31,17 @@ interface SettingsCMSProps {
   onExportAllData: () => void;
   onResetAllData: () => void;
   showToast: (msg: string) => void;
+  mongoStatus?: {
+    connected: boolean;
+    configured: boolean;
+    database: string;
+    maskedUri: string;
+    pingMs?: number;
+    message?: string;
+    counts?: Record<string, number>;
+  };
+  onSyncMongo?: (reset?: boolean) => void;
+  isSyncingMongo?: boolean;
 }
 
 export default function SettingsCMS({
@@ -35,9 +50,37 @@ export default function SettingsCMS({
   onExportAllData,
   onResetAllData,
   showToast,
+  mongoStatus = {
+    connected: false,
+    configured: false,
+    database: 'aura_studio_db',
+    maskedUri: '',
+  },
+  onSyncMongo,
+  isSyncingMongo = false,
 }: SettingsCMSProps) {
   const [formData, setFormData] = useState<AdminStudioSettings>({ ...settings });
-  const [activeSubTab, setActiveSubTab] = useState<'general' | 'seo' | 'security' | 'backup'>('general');
+  const [activeSubTab, setActiveSubTab] = useState<'general' | 'seo' | 'security' | 'database' | 'backup'>('general');
+  const [testResult, setTestResult] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState<boolean>(false);
+
+  const handleTestMongo = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch('/api/db-status');
+      const data = await res.json();
+      if (data.connected) {
+        setTestResult(`Connected successfully to MongoDB Atlas database "${data.database}" in ${data.pingMs}ms`);
+      } else {
+        setTestResult(data.message || 'Connection check failed.');
+      }
+    } catch (err: any) {
+      setTestResult('Network error while querying database status.');
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   // Security password state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -107,6 +150,7 @@ export default function SettingsCMS({
         {[
           { id: 'general', label: 'Studio Profile', icon: Globe },
           { id: 'seo', label: 'SEO & Social Meta', icon: Sparkles },
+          { id: 'database', label: 'MongoDB Database', icon: Database },
           { id: 'security', label: 'Admin Security', icon: Shield },
           { id: 'backup', label: 'Data & Backup', icon: Download },
         ].map((tab) => {
@@ -355,6 +399,162 @@ export default function SettingsCMS({
             </button>
           </div>
         </form>
+      )}
+
+      {/* TAB 3: MONGODB DATABASE */}
+      {activeSubTab === 'database' && (
+        <div className="space-y-6 max-w-3xl">
+          {/* Status Overview Card */}
+          <div className="p-6 bg-white border border-slate-200 rounded-2xl space-y-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    mongoStatus.connected
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                      : mongoStatus.configured
+                      ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}
+                >
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 font-display">
+                    MongoDB Database Connection
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Active cloud persistence for commercials, media links, and studio records
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold font-mono inline-flex items-center gap-1.5 border ${
+                    mongoStatus.connected
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : mongoStatus.configured
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      mongoStatus.connected
+                        ? 'bg-emerald-500 animate-pulse'
+                        : mongoStatus.configured
+                        ? 'bg-amber-500'
+                        : 'bg-slate-400'
+                    }`}
+                  />
+                  <span>
+                    {mongoStatus.connected
+                      ? 'Connected & Synced'
+                      : mongoStatus.configured
+                      ? 'Connecting...'
+                      : 'Awaiting MONGODB_URI'}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* Connection Details Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-400">Database Name</span>
+                <p className="font-semibold text-slate-800 font-mono">{mongoStatus.database || 'aura_studio_db'}</p>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-400">Connection URI</span>
+                <p className="font-mono text-slate-700 truncate" title={mongoStatus.maskedUri || 'mongodb+srv://...'}>
+                  {mongoStatus.maskedUri || 'Configured via .env (MONGODB_URI)'}
+                </p>
+              </div>
+
+              {mongoStatus.pingMs !== undefined && (
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400">Ping Latency</span>
+                  <p className="font-semibold text-emerald-600 font-mono flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5" />
+                    <span>{mongoStatus.pingMs} ms</span>
+                  </p>
+                </div>
+              )}
+
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                <span className="text-[10px] font-mono uppercase font-bold text-slate-400">Storage Format</span>
+                <p className="font-semibold text-slate-800">Direct Link Format (Images & 4K Video URLs)</p>
+              </div>
+            </div>
+
+            {/* Live Collection Counts */}
+            {mongoStatus.counts && (
+              <div className="pt-2">
+                <h4 className="text-xs font-mono uppercase text-slate-500 font-bold mb-2.5">
+                  Collection Records in MongoDB
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  {Object.entries(mongoStatus.counts).map(([colName, count]) => (
+                    <div key={colName} className="p-2.5 bg-white border border-slate-200 rounded-lg text-center shadow-2xs">
+                      <span className="block font-bold text-slate-900 font-display text-sm">{count}</span>
+                      <span className="text-[10px] text-slate-500 font-mono capitalize">{colName}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions & Diagnostics */}
+            <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleTestMongo}
+                disabled={isTesting}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Server className="w-4 h-4 text-[#b15f2c]" />
+                <span>{isTesting ? 'Testing Ping...' : 'Test Connection'}</span>
+              </button>
+
+              {onSyncMongo && (
+                <button
+                  type="button"
+                  onClick={() => onSyncMongo(false)}
+                  disabled={isSyncingMongo}
+                  className="px-4 py-2 bg-[#b15f2c] hover:bg-[#97501f] text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isSyncingMongo ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingMongo ? 'Syncing...' : 'Sync & Seed MongoDB'}</span>
+                </button>
+              )}
+            </div>
+
+            {testResult && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700">
+                {testResult}
+              </div>
+            )}
+          </div>
+
+          {/* Configuration Instructions */}
+          <div className="p-5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-3">
+            <h4 className="text-xs font-bold text-amber-900 uppercase font-mono tracking-wider flex items-center gap-2">
+              <Shield className="w-4 h-4 text-amber-700" />
+              <span>MongoDB Environment Key Setup (.env)</span>
+            </h4>
+            <p className="text-xs text-amber-900/90 leading-relaxed">
+              Your MongoDB connection string is safely kept on the secure server via environment variables. Add your key to <code className="px-1.5 py-0.5 bg-white border border-amber-300 rounded text-amber-950 font-mono font-bold">.env</code>:
+            </p>
+            <pre className="p-3 bg-slate-900 text-emerald-400 rounded-xl text-[11px] font-mono overflow-x-auto selection:bg-emerald-800">
+{`# .env configuration
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DB=aura_studio_db`}
+            </pre>
+          </div>
+        </div>
       )}
 
       {/* TAB 4: BACKUP & RESTORE */}

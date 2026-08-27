@@ -4,9 +4,22 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { motion, AnimatePresence, useMotionValue, easeOut, animate } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+export interface ThreeDImageRingProject {
+  name: string;
+  category: string;
+  client: string;
+  image: string;
+  videoUrl?: string;
+  description?: string;
+}
+
 export interface ThreeDImageRingProps {
-  /** Array of image URLs to display in the ring */
+  /** Array of image URLs or full project items */
   images?: string[];
+  projects?: ThreeDImageRingProject[];
+  onSelectProject?: (index: number) => void;
+  /** Controlled rotation from external scroll or state */
+  controlledRotation?: number;
   /** Container width in pixels (will be scaled) */
   width?: number;
   /** 3D perspective value */
@@ -31,90 +44,75 @@ export interface ThreeDImageRingProps {
   backgroundColor?: string;
   /** Enable/disable drag functionality */
   draggable?: boolean;
-  /** Animation ease for entrance */
-  ease?: string;
   /** Breakpoint for mobile responsiveness (e.g., 768 for iPad mini) */
   mobileBreakpoint?: number;
   /** Scale factor for mobile (e.g., 0.7 for 70% size) */
   mobileScaleFactor?: number;
-  /** Power for the drag end inertia animation (higher means faster stop) */
+  /** Power for the drag end inertia animation */
   inertiaPower?: number;
-  /** Time constant for the drag end inertia animation (duration of deceleration in ms) */
+  /** Time constant for the drag end inertia animation */
   inertiaTimeConstant?: number;
-  /** Multiplier for initial velocity when drag ends (influences initial "spin") */
+  /** Multiplier for initial velocity when drag ends */
   inertiaVelocityMultiplier?: number;
 }
 
 export function ThreeDImageRing({
-  images = [
-    "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2940&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=2940&auto=format&fit=crop",
-  ],
+  images = [],
+  projects = [],
+  onSelectProject,
+  controlledRotation,
   width = 300,
   perspective = 2000,
   imageDistance = 500,
   initialRotation = 180,
-  animationDuration = 1.5,
-  staggerDelay = 0.1,
-  hoverOpacity = 0.5,
+  animationDuration = 1.2,
+  staggerDelay = 0.08,
+  hoverOpacity = 0.45,
   containerClassName,
   ringClassName,
   imageClassName,
   backgroundColor,
   draggable = true,
-  ease = "easeOut",
   mobileBreakpoint = 768,
-  mobileScaleFactor = 0.8,
-  inertiaPower = 0.8, // Default power for inertia
-  inertiaTimeConstant = 300, // Default time constant for inertia
-  inertiaVelocityMultiplier = 20, // Default multiplier for initial spin
+  mobileScaleFactor = 0.78,
+  inertiaPower = 0.8,
+  inertiaTimeConstant = 300,
+  inertiaVelocityMultiplier = 20,
 }: ThreeDImageRingProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+
+  // Normalize items array
+  const displayItems = useMemo(() => {
+    if (projects.length > 0) return projects.map((p) => ({ ...p }));
+    return images.map((img, i) => ({
+      name: `Project 0${i + 1}`,
+      category: 'Creative Design',
+      client: 'Studio Selection',
+      image: img,
+    }));
+  }, [projects, images]);
 
   const rotationY = useMotionValue(initialRotation);
   const startX = useRef<number>(0);
   const currentRotationY = useRef<number>(initialRotation);
   const isDragging = useRef<boolean>(false);
-  const velocity = useRef<number>(0); // To track drag velocity
+  const velocity = useRef<number>(0);
 
   const [currentScale, setCurrentScale] = useState(1);
-  const [showImages] = useState(true);
+  const [activeHoverIndex, setActiveHoverIndex] = useState<number | null>(null);
 
-  const angle = useMemo(() => 360 / images.length, [images.length]);
+  const angle = useMemo(() => 360 / Math.max(displayItems.length, 1), [displayItems.length]);
 
-  const getBgPos = useCallback(
-    (imageIndex: number, currentRot: number, scale: number) => {
-      const scaledImageDistance = imageDistance * scale;
-      const effectiveRotation = currentRot - 180 - imageIndex * angle;
-      const parallaxOffset = ((effectiveRotation % 360 + 360) % 360) / 360;
-      return `${-(parallaxOffset * (scaledImageDistance / 1.5))}px 0px`;
-    },
-    [angle, imageDistance]
-  );
-
+  // Sync with controlledRotation when provided (e.g. from smooth scroll-track)
   useEffect(() => {
-    const unsubscribe = rotationY.on("change", (latestRotation) => {
-      if (ringRef.current) {
-        Array.from(ringRef.current.children).forEach((imgElement, i) => {
-          (imgElement as HTMLElement).style.backgroundPosition = getBgPos(
-            i,
-            latestRotation,
-            currentScale
-          );
-        });
-      }
-      currentRotationY.current = latestRotation;
-    });
-    return () => unsubscribe();
-  }, [rotationY, getBgPos, currentScale]);
+    if (controlledRotation !== undefined && !isDragging.current) {
+      rotationY.set(controlledRotation);
+      currentRotationY.current = controlledRotation;
+    }
+  }, [controlledRotation, rotationY]);
 
+  // Responsive scale
   useEffect(() => {
     const handleResize = () => {
       const viewportWidth = window.innerWidth;
@@ -128,40 +126,35 @@ export function ThreeDImageRing({
     return () => window.removeEventListener("resize", handleResize);
   }, [mobileBreakpoint, mobileScaleFactor]);
 
+  // Drag & touch listeners
   const handleDragStart = (event: React.MouseEvent | React.TouchEvent) => {
     if (!draggable) return;
     isDragging.current = true;
     const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
     startX.current = clientX;
-    // Stop any ongoing animation instantly when drag starts
     rotationY.stop();
-    velocity.current = 0; // Reset velocity
+    velocity.current = 0;
     if (ringRef.current) {
-      (ringRef.current as HTMLElement).style.cursor = "grabbing";
+      ringRef.current.style.cursor = "grabbing";
     }
-    // Attach global move and end listeners to document when dragging starts
     document.addEventListener("mousemove", handleDrag);
     document.addEventListener("mouseup", handleDragEnd);
-    document.addEventListener("touchmove", handleDrag);
+    document.addEventListener("touchmove", handleDrag, { passive: false });
     document.addEventListener("touchend", handleDragEnd);
   };
 
   const handleDrag = (event: MouseEvent | TouchEvent) => {
-    // Only proceed if dragging is active
     if (!draggable || !isDragging.current) return;
-
     const clientX = "touches" in event ? (event as TouchEvent).touches[0].clientX : (event as MouseEvent).clientX;
     const deltaX = clientX - startX.current;
-
-    // Update velocity based on deltaX
-    velocity.current = -deltaX * 0.5; // Factor of 0.5 to control sensitivity
-
+    velocity.current = -deltaX * 0.45;
     rotationY.set(currentRotationY.current + velocity.current);
-
+    currentRotationY.current = rotationY.get();
     startX.current = clientX;
   };
 
   const handleDragEnd = () => {
+    if (!isDragging.current) return;
     isDragging.current = false;
     if (ringRef.current) {
       ringRef.current.style.cursor = "grab";
@@ -177,37 +170,32 @@ export function ThreeDImageRing({
     const velocityBoost = velocity.current * inertiaVelocityMultiplier;
     const target = initial + velocityBoost;
 
-    // Animate with inertia manually using `animate()`
     animate(initial, target, {
       type: "inertia",
       velocity: velocityBoost,
       power: inertiaPower,
       timeConstant: inertiaTimeConstant,
       restDelta: 0.5,
-      modifyTarget: (target) => Math.round(target / angle) * angle,
+      modifyTarget: (t) => Math.round(t / angle) * angle,
       onUpdate: (latest) => {
         rotationY.set(latest);
+        currentRotationY.current = latest;
       },
     });
 
     velocity.current = 0;
   };
 
-  // Corrected imageVariants: no function for 'visible' state
   const imageVariants = {
-    hidden: { y: 200, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      // Transition properties will be defined directly on the motion.div using `custom` prop
-    },
+    hidden: { y: 150, opacity: 0 },
+    visible: { y: 0, opacity: 1 },
   };
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        "w-full h-full overflow-hidden select-none relative",
+        "w-full h-full overflow-hidden select-none relative flex items-center justify-center",
         containerClassName
       )}
       style={{
@@ -215,7 +203,6 @@ export function ThreeDImageRing({
         transform: `scale(${currentScale})`,
         transformOrigin: "center center",
       }}
-      // Attach initial drag start listeners only
       onMouseDown={draggable ? handleDragStart : undefined}
       onTouchStart={draggable ? handleDragStart : undefined}
     >
@@ -223,7 +210,7 @@ export function ThreeDImageRing({
         style={{
           perspective: `${perspective}px`,
           width: `${width}px`,
-          height: `${width * 1.33}px`,
+          height: `${width * 1.38}px`,
           position: "absolute",
           left: "50%",
           top: "50%",
@@ -232,10 +219,7 @@ export function ThreeDImageRing({
       >
         <motion.div
           ref={ringRef}
-          className={cn(
-            "w-full h-full absolute",
-            ringClassName
-          )}
+          className={cn("w-full h-full absolute", ringClassName)}
           style={{
             transformStyle: "preserve-3d",
             rotateY: rotationY,
@@ -243,56 +227,78 @@ export function ThreeDImageRing({
           }}
         >
           <AnimatePresence>
-            {showImages && images.map((imageUrl, index) => (
+            {displayItems.map((item, index) => (
               <motion.div
                 key={index}
+                onClick={(e) => {
+                  if (onSelectProject) {
+                    e.stopPropagation();
+                    onSelectProject(index);
+                  }
+                }}
                 className={cn(
-                  "w-full h-full absolute rounded-2xl overflow-hidden shadow-2xl border border-white/20",
+                  "w-full h-full absolute rounded-3xl overflow-hidden shadow-2xl bg-neutral-900 border border-white/20 group cursor-pointer",
                   imageClassName
                 )}
                 style={{
                   transformStyle: "preserve-3d",
-                  backgroundImage: `url(${imageUrl})`,
-                  backgroundSize: "cover",
-                  backgroundRepeat: "no-repeat",
                   backfaceVisibility: "hidden",
                   rotateY: index * -angle,
                   z: -imageDistance * currentScale,
                   transformOrigin: `50% 50% ${imageDistance * currentScale}px`,
-                  backgroundPosition: getBgPos(index, initialRotation, currentScale),
+                  opacity:
+                    activeHoverIndex !== null && activeHoverIndex !== index
+                      ? hoverOpacity
+                      : 1,
+                  transition: "opacity 0.25s ease-out, border-color 0.25s ease-out",
                 }}
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                variants={imageVariants} // Use the simplified variants object
-                custom={index} // Pass the index as a custom prop
+                variants={imageVariants}
                 transition={{
-                  delay: index * staggerDelay, // Use index directly in transition
+                  delay: index * staggerDelay,
                   duration: animationDuration,
-                  ease: easeOut, // Apply ease for entrance animation
+                  ease: easeOut,
                 }}
-                whileHover={{ opacity: 1, transition: { duration: 0.15 } }}
                 onHoverStart={() => {
-                  // Prevent hover effects while dragging
-                  if (isDragging.current) return;
-                  if (ringRef.current) {
-                    Array.from(ringRef.current.children).forEach((imgEl, i) => {
-                      if (i !== index) {
-                        (imgEl as HTMLElement).style.opacity = `${hoverOpacity}`;
-                      }
-                    });
+                  if (!isDragging.current) {
+                    setActiveHoverIndex(index);
                   }
                 }}
                 onHoverEnd={() => {
-                  // Prevent hover effects while dragging
-                  if (isDragging.current) return;
-                  if (ringRef.current) {
-                    Array.from(ringRef.current.children).forEach((imgEl) => {
-                      (imgEl as HTMLElement).style.opacity = `1`;
-                    });
-                  }
+                  setActiveHoverIndex(null);
                 }}
-              />
+              >
+                {/* Clean Image Background with 100% full cover - No white blanks */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover object-center select-none pointer-events-none group-hover:scale-105 transition-transform duration-500"
+                />
+
+                {/* Ambient vignette gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                {/* Subtle project card top badge */}
+                <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none">
+                  <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wider border border-white/15">
+                    {item.category.split(' ')[0]}
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-white/60 group-hover:bg-[#e65c00] transition-colors" />
+                </div>
+
+                {/* Bottom title & client info */}
+                <div className="absolute bottom-0 inset-x-0 p-4 text-white pointer-events-none flex flex-col gap-0.5">
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-white/60">
+                    {item.client}
+                  </span>
+                  <h3 className="text-sm font-bold tracking-tight text-white line-clamp-1 group-hover:text-[#f97316] transition-colors">
+                    {item.name}
+                  </h3>
+                </div>
+              </motion.div>
             ))}
           </AnimatePresence>
         </motion.div>

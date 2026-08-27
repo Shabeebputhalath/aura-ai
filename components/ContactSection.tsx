@@ -27,9 +27,32 @@ export default function ContactSection({ onOpenMenu, isStandalonePage = false }:
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    const messagePayload = {
+      name: formData.name || 'Anonymous Client',
+      email: formData.email,
+      company: formData.company || 'Private Client',
+      subject: formData.service ? `Inquiry for ${formData.service}` : 'Studio Production Consultation',
+      serviceCategory: formData.service || 'Custom AI Video Production',
+      message: `${formData.description || 'Client submitted contact form inquiry.'}${formData.website ? ` (Website: ${formData.website})` : ''}`,
+      budget: 'Flexible',
+      timeline: 'Standard',
+      status: 'new',
+    };
+
+    // Save submission to MongoDB via API endpoint
+    try {
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messagePayload),
+      });
+    } catch (err) {
+      console.warn('Could not post inquiry to /api/messages:', err);
+    }
 
     // Save submission to localStorage for Admin Requests view
     try {
@@ -56,10 +79,8 @@ export default function ContactSection({ onOpenMenu, isStandalonePage = false }:
       console.error('Failed to save submission:', err);
     }
 
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 800);
+    setLoading(false);
+    setSubmitted(true);
   };
 
   return (

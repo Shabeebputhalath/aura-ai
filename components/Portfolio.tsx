@@ -140,7 +140,7 @@ function PortfolioCard({ project, index, isVisible }: { project: ProjectItem; in
 export default function Portfolio() {
   const containerRef = useRef<HTMLUListElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [projectsList] = useState<ProjectItem[]>(() => {
+  const [projectsList, setProjectsList] = useState<ProjectItem[]>(() => {
     if (typeof window === 'undefined') return PROJECTS;
     try {
       const stored = localStorage.getItem('aura_commercials');
@@ -151,11 +151,11 @@ export default function Portfolio() {
             .filter((p: any) => p.status !== 'draft')
             .map((p: any) => ({
               id: p.id,
-              name: p.name,
+              name: p.name || p.title,
               category: p.category,
-              year: p.year,
-              description: p.description,
-              tags: p.tags || ['AI Commercial'],
+              year: p.year || '2026',
+              description: p.description || p.shortDescription,
+              tags: p.tags || p.toolsUsed || ['AI Commercial'],
               thumbnail: p.thumbnail,
             }));
           if (mapped.length > 0) {
@@ -168,6 +168,27 @@ export default function Portfolio() {
     }
     return PROJECTS;
   });
+
+  useEffect(() => {
+    // Fetch live projects from MongoDB
+    fetch('/api/projects?status=published')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.data) && data.data.length > 0) {
+          const mapped: ProjectItem[] = data.data.map((p: any) => ({
+            id: p.id || p._id,
+            name: p.title || p.name,
+            category: p.category || 'Product Commercial',
+            year: p.year || '2026',
+            description: p.shortDescription || p.description,
+            tags: p.toolsUsed || ['4K AI', 'Commercial'],
+            thumbnail: p.thumbnail,
+          }));
+          setProjectsList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

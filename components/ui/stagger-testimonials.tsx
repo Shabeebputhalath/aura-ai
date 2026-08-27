@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const SQRT_5000 = Math.sqrt(5000);
@@ -18,7 +18,7 @@ export interface TestimonialItem {
 const defaultTestimonials: TestimonialItem[] = [
   {
     tempId: 0,
-    testimonial: "AURA AI transformed our architectural visualization pipeline. We deliver 5x faster with photorealistic 8K fidelity.",
+    testimonial: "AURA transformed our architectural visualization pipeline. We deliver 5x faster with photorealistic 8K fidelity.",
     by: "Alexandre Moreau",
     role: "Principal Architect, Atelier Moreau",
     imgSrc: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
@@ -42,7 +42,7 @@ const defaultTestimonials: TestimonialItem[] = [
   },
   {
     tempId: 3,
-    testimonial: "AURA's generative architectural models cut our preliminary concept phase from 4 weeks down to 48 hours.",
+    testimonial: "The generative design models cut our preliminary concept phase from 4 weeks down to 48 hours.",
     by: "Marcus Lindqvist",
     role: "Creative Director, Nordic Form",
     imgSrc: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
@@ -50,7 +50,7 @@ const defaultTestimonials: TestimonialItem[] = [
   },
   {
     tempId: 4,
-    testimonial: "If I could give 11 stars out of 10 for spatial fidelity and AI material physics, I would. Truly phenomenal work.",
+    testimonial: "If I could give 11 stars out of 10 for spatial fidelity and material physics, I would. Truly phenomenal work.",
     by: "Andre Rossi",
     role: "Chief Spatial Officer, Horizon Urban",
     imgSrc: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
@@ -66,7 +66,7 @@ const defaultTestimonials: TestimonialItem[] = [
   },
   {
     tempId: 6,
-    testimonial: "The precision in ray-traced ambient lighting and parametric structures is completely unmatched in modern AI tools.",
+    testimonial: "The precision in ambient lighting and parametric structures is completely unmatched in modern digital design tools.",
     by: "Pamela Sterling",
     role: "Partner, Foster & Sterling Design",
     imgSrc: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
@@ -74,7 +74,7 @@ const defaultTestimonials: TestimonialItem[] = [
   },
   {
     tempId: 7,
-    testimonial: "The client acquisition conversion increased by 64% after switching to AURA's interactive cinematic walkthroughs.",
+    testimonial: "Client acquisition conversion increased by 64% after switching to interactive cinematic walkthroughs.",
     by: "David K. Hoffmann",
     role: "Managing Director, Munich Living",
     imgSrc: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
@@ -103,8 +103,8 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
       className={cn(
         "absolute left-1/2 top-1/2 cursor-pointer border-2 p-7 sm:p-8 transition-all duration-500 ease-in-out select-none flex flex-col justify-between",
         isCenter 
-          ? "z-20 bg-[#b15f2c] text-white border-[#b15f2c] shadow-2xl shadow-[#b15f2c]/30" 
-          : "z-0 bg-white text-[#111111] border-[#e6e5e2] hover:border-[#b15f2c]/50 shadow-lg shadow-black/5"
+          ? "z-20 bg-[#111111] text-white border-[#111111] shadow-2xl shadow-black/30" 
+          : "z-0 bg-white text-[#111111] border-neutral-200 hover:border-black shadow-lg shadow-black/5"
       )}
       style={{
         width: cardSize,
@@ -121,10 +121,11 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
         pointerEvents: Math.abs(position) > 2 ? 'none' : 'auto'
       }}
     >
+      {/* Geometric chamfer accent line */}
       <span
         className={cn(
           "absolute block origin-top-right rotate-45",
-          isCenter ? "bg-white/30" : "bg-[#e6e5e2]"
+          isCenter ? "bg-white/25" : "bg-neutral-200"
         )}
         style={{
           right: -2,
@@ -141,7 +142,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
             alt={testimonial.by}
             className={cn(
               "h-12 w-12 rounded-xl object-cover ring-2",
-              isCenter ? "ring-white/40" : "ring-[#b15f2c]/30"
+              isCenter ? "ring-white/30" : "ring-neutral-200"
             )}
           />
           <div className="flex items-center gap-0.5">
@@ -150,7 +151,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
                 key={i} 
                 className={cn(
                   "w-3.5 h-3.5",
-                  isCenter ? "fill-amber-200 text-amber-200" : "fill-[#b15f2c] text-[#b15f2c]"
+                  isCenter ? "fill-white text-white" : "fill-black text-black"
                 )} 
               />
             ))}
@@ -167,7 +168,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
 
       <div className={cn(
         "pt-3 border-t",
-        isCenter ? "border-white/20" : "border-[#e6e5e2]"
+        isCenter ? "border-white/15" : "border-neutral-200"
       )}>
         <p className={cn(
           "text-xs sm:text-sm font-bold tracking-tight",
@@ -178,7 +179,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
         {testimonial.role && (
           <p className={cn(
             "text-[11px] truncate mt-0.5 font-mono",
-            isCenter ? "text-white/80" : "text-[#8d8d8d]"
+            isCenter ? "text-neutral-400" : "text-neutral-500"
           )}>
             {testimonial.role}
           </p>
@@ -199,24 +200,37 @@ export const StaggerTestimonials: React.FC<StaggerTestimonialsProps> = ({
 }) => {
   const [cardSize, setCardSize] = useState(360);
   const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>(items);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const handleMove = (steps: number) => {
-    const newList = [...testimonialsList];
-    if (steps > 0) {
-      for (let i = steps; i > 0; i--) {
-        const item = newList.shift();
-        if (!item) return;
-        newList.push({ ...item, tempId: Math.random() });
+  const handleMove = React.useCallback((steps: number) => {
+    setTestimonialsList((prev) => {
+      const newList = [...prev];
+      if (steps > 0) {
+        for (let i = steps; i > 0; i--) {
+          const item = newList.shift();
+          if (!item) return prev;
+          newList.push({ ...item, tempId: Math.random() });
+        }
+      } else {
+        for (let i = steps; i < 0; i++) {
+          const item = newList.pop();
+          if (!item) return prev;
+          newList.unshift({ ...item, tempId: Math.random() });
+        }
       }
-    } else {
-      for (let i = steps; i < 0; i++) {
-        const item = newList.pop();
-        if (!item) return;
-        newList.unshift({ ...item, tempId: Math.random() });
-      }
-    }
-    setTestimonialsList(newList);
-  };
+      return newList;
+    });
+  }, []);
+
+  // Infinite 1-second auto progression
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      handleMove(1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [handleMove, isPaused]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -242,6 +256,10 @@ export const StaggerTestimonials: React.FC<StaggerTestimonialsProps> = ({
         className
       )}
       style={{ height: 520 }}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
     >
       <div className="relative w-full h-[430px] flex items-center justify-center">
         {testimonialsList.map((testimonial, index) => {
@@ -259,36 +277,8 @@ export const StaggerTestimonials: React.FC<StaggerTestimonialsProps> = ({
           );
         })}
       </div>
-
-      <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-3 z-30">
-        <button
-          onClick={() => handleMove(-1)}
-          className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-2xl transition-all cursor-pointer shadow-md",
-            "bg-white border border-[#e6e5e2] text-[#111111] hover:bg-[#b15f2c] hover:text-white hover:border-[#b15f2c]",
-            "active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b15f2c]"
-          )}
-          aria-label="Previous testimonial"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        <span className="text-[11px] font-mono text-[#8d8d8d] px-2 font-semibold tracking-wider uppercase">
-          Drag / Click to Navigate
-        </span>
-
-        <button
-          onClick={() => handleMove(1)}
-          className={cn(
-            "flex h-12 w-12 items-center justify-center rounded-2xl transition-all cursor-pointer shadow-md",
-            "bg-white border border-[#e6e5e2] text-[#111111] hover:bg-[#b15f2c] hover:text-white hover:border-[#b15f2c]",
-            "active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b15f2c]"
-          )}
-          aria-label="Next testimonial"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
     </div>
   );
 };
+
+export default StaggerTestimonials;

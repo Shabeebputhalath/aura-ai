@@ -1,248 +1,237 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { User, Sparkles, Building2, Layers, Check, MessageSquare, ArrowRight } from 'lucide-react';
-import { DEFAULT_PRICING_CONFIG, FullPricingConfig } from './admin/PricingManager';
-import { PricingColumn, PricingColumnProps } from '@/components/ui/pricing-utils/pricing-column';
-import { Section } from '@/components/ui/pricing-utils/section';
+import React from 'react';
+import { ArrowRight, Leaf, Boxes, PenTool } from 'lucide-react';
 import { buildPricingInquiryUrl } from '@/lib/whatsapp';
 
 interface PricingProps {
   onOpenModalWithConfig?: (configSummary: string) => void;
 }
 
-const DURATIONS = [
-  { label: '15 Seconds', seconds: 15 },
-  { label: '30 Seconds (Popular)', seconds: 30 },
-  { label: '45 Seconds', seconds: 45 },
-  { label: '60 Seconds', seconds: 60 },
-];
+interface PlanItem {
+  id: string;
+  name: string;
+  badge: string;
+  price: number;
+  description: string;
+  iconType: 'leaf' | 'boxes' | 'pen';
+  highlighted?: boolean;
+  features: string[];
+}
 
-const ADD_ONS = [
-  { id: 'script', name: 'Script Writing', price: 500 },
-  { id: 'voiceover', name: 'AI Voiceover', price: 500 },
-  { id: 'subtitles', name: 'Subtitle Integration', price: 300 },
-  { id: 'thumbnail', name: 'Custom Poster / Thumbnail', price: 700 },
-  { id: 'logo_anim', name: 'Logo Animation', price: 1500 },
+const PLANS: PlanItem[] = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    badge: 'STANDARD',
+    price: 99,
+    description: 'Great for startups and personal projects with a clean and simple design.',
+    iconType: 'leaf',
+    highlighted: false,
+    features: [
+      '2 Logo Variations',
+      '3 Revisions',
+      'Custom Color Palette',
+      'File Formats: AI, PDF SVG, PNG',
+    ],
+  },
+  {
+    id: 'professional',
+    name: 'Professional Logo Design',
+    badge: 'PROFESSIONAL LOGO DESIGN',
+    price: 299,
+    description:
+      'The comprehensive solution for businesses looking for a fully customized logo with all essential assets included.',
+    iconType: 'boxes',
+    highlighted: true,
+    features: [
+      '6 Logo Variations',
+      'Unlimited Revisions',
+      'Custom Color Palette & Branding Guidelines',
+      'FileFormats: .AI, .PDF, .SVG, .PNG',
+      'Estimated Delivery Time: 3 Days',
+      'Extra assets: Favicon, Social Media Kit',
+    ],
+  },
+  {
+    id: 'premium',
+    name: 'Premium Logo Design',
+    badge: 'PREMIUM LOGO DESIGN',
+    price: 199,
+    description:
+      'For businesses seeking a solid logo with room for refinement and custom branding.',
+    iconType: 'pen',
+    highlighted: false,
+    features: [
+      '4 Logo Variations',
+      '4 Revisions',
+      'Custom Color Palette',
+      'File Formats: AI, PDF SVG, PNG',
+    ],
+  },
 ];
 
 export default function Pricing({ onOpenModalWithConfig }: PricingProps) {
-  const [durationSeconds, setDurationSeconds] = useState<number>(30);
-  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
-  const [isExpress, setIsExpress] = useState<boolean>(false);
-  const [ratesConfig, setRatesConfig] = useState<FullPricingConfig>(() => {
-    if (typeof window === 'undefined') return DEFAULT_PRICING_CONFIG;
-    try {
-      const stored = localStorage.getItem('aura_pricing_config');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed && parsed.tiers) return parsed;
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return DEFAULT_PRICING_CONFIG;
-  });
-
-  useEffect(() => {
-    const handleSync = () => {
-      try {
-        const stored = localStorage.getItem('aura_pricing_config');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.tiers) setRatesConfig(parsed);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    window.addEventListener('aura_pricing_updated', handleSync);
-    return () => window.removeEventListener('aura_pricing_updated', handleSync);
-  }, []);
-
-  // Rate calculations
-  const starterTier =
-    ratesConfig.tiers.find((t) => t.id === 'starter') || DEFAULT_PRICING_CONFIG.tiers[0];
-  const businessTier =
-    ratesConfig.tiers.find((t) => t.id === 'business') || DEFAULT_PRICING_CONFIG.tiers[1];
-  const enterpriseTier =
-    ratesConfig.tiers.find((t) => t.id === 'enterprise') || DEFAULT_PRICING_CONFIG.tiers[2];
-
-  const starterPrice = durationSeconds * starterTier.ratePerSecond;
-  const businessPrice = durationSeconds * businessTier.ratePerSecond;
-  const enterprisePrice = durationSeconds * enterpriseTier.ratePerSecond;
-
-  const toggleAddOn = (id: string) => {
-    if (selectedAddOns.includes(id)) {
-      setSelectedAddOns(selectedAddOns.filter((a) => a !== id));
-    } else {
-      setSelectedAddOns([...selectedAddOns, id]);
-    }
-  };
-
-  const handleSelectPlan = (planName: string, basePrice: number) => {
-    const addOnNames = selectedAddOns
-      .map((id) => ADD_ONS.find((a) => a.id === id)?.name)
-      .filter(Boolean)
-      .join(', ');
-
-    const addOnsTotal = selectedAddOns.reduce((sum, id) => {
-      const found = ADD_ONS.find((a) => a.id === id);
-      return sum + (found ? found.price : 0);
-    }, 0);
-
-    const subtotal = basePrice + addOnsTotal;
-    const expressSurcharge = isExpress ? Math.round(subtotal * 0.3) : 0;
-    const finalPrice = subtotal + expressSurcharge;
-
-    const summary = `${planName} (${durationSeconds}s) - ₹${finalPrice.toLocaleString('en-IN')}${
-      addOnNames ? ` + Add-ons: [${addOnNames}]` : ''
-    }${isExpress ? ' (Express 24h)' : ''}`;
-
-    // Generate dedicated WhatsApp link with pre-filled details
+  const handleSelectPlan = (plan: PlanItem) => {
+    const summary = `${plan.name} - $${plan.price}`;
+    
+    // Direct WhatsApp inquiry with pre-filled details
     const whatsappUrl = buildPricingInquiryUrl(
-      planName,
-      durationSeconds,
-      finalPrice,
-      addOnNames || undefined,
-      isExpress
+      plan.name,
+      0,
+      plan.price,
+      plan.features.slice(0, 2).join(', '),
+      false
     );
 
-    window.open(whatsappUrl, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(whatsappUrl, '_blank');
+    }
 
     if (onOpenModalWithConfig) {
       onOpenModalWithConfig(summary);
     }
   };
 
-  const plans: PricingColumnProps[] = [
-    {
-      name: 'Starter',
-      icon: <User className="size-4 text-gray-700" />,
-      description: 'AI Reels & Short Videos for Instagram, Facebook Ads & YouTube Shorts.',
-      price: `₹${starterPrice.toLocaleString('en-IN')}`,
-      priceNote: `₹${starterTier.ratePerSecond}/sec · ${durationSeconds}s video output`,
-      cta: {
-        variant: 'outline',
-        label: 'Book Starter on WhatsApp',
-        onClick: () => handleSelectPlan('Starter AI Reels', starterPrice),
-      },
-      features: [
-        'AI Concept & Prompt Development',
-        'Social Media Optimized 9:16 Aspect Ratio',
-        'Standard Video Editing & Assembly',
-        'Full HD / 4K Video Export',
-        '1 Free Revision Round Included',
-        '2–5 Working Days Delivery',
-      ],
-      variant: 'default',
-    },
-    {
-      name: 'Business',
-      icon: <Sparkles className="size-4 text-brand" />,
-      description: 'High-end product commercials, sound design & studio-grade AI visuals.',
-      price: `₹${businessPrice.toLocaleString('en-IN')}`,
-      priceNote: `₹${businessTier.ratePerSecond}/sec · ${durationSeconds}s commercial`,
-      promotionText: 'MOST POPULAR',
-      cta: {
-        variant: 'glow-brand',
-        label: 'Book Business on WhatsApp',
-        onClick: () => handleSelectPlan('Business Product Commercial', businessPrice),
-      },
-      features: [
-        'Premium AI Visual & Texture Renders',
-        'Product Showcase & Macro Details',
-        'Professional Premiere Pro Editing',
-        'Custom Sound Design & Audio Mixing',
-        'Cinematic Studio Color Grading',
-        '2 Free Revisions Included',
-      ],
-      variant: 'glow-brand',
-    },
-    {
-      name: 'Enterprise',
-      icon: <Building2 className="size-4 text-blue-600" />,
-      description: 'Cinematic brand stories, travel, real estate & 3D Pixar-style animation.',
-      price: `₹${enterprisePrice.toLocaleString('en-IN')}`,
-      priceNote: `₹${enterpriseTier.ratePerSecond}/sec · ${durationSeconds}s cinematic`,
-      cta: {
-        variant: 'glow',
-        label: 'Book Enterprise on WhatsApp',
-        onClick: () => handleSelectPlan('Enterprise Cinematic & 3D', enterprisePrice),
-      },
-      features: [
-        'Storytelling & 3D Character/Style',
-        'Brand Stories, Tourism & Real Estate',
-        'Script Writing & Flow Integration',
-        'AI Voiceover & Sound Master',
-        '3 Free Revisions Included',
-        'Priority Rendering Queue & Fast Turnaround',
-      ],
-      variant: 'glow',
-    },
-  ];
+  const renderIcon = (type: PlanItem['iconType'], isHighlighted?: boolean) => {
+    if (type === 'leaf') {
+      return (
+        <div className="w-12 h-12 rounded-full bg-[#f4f4f4] flex items-center justify-center text-black">
+          <Leaf className="w-5 h-5 stroke-[1.75]" />
+        </div>
+      );
+    }
+    if (type === 'boxes') {
+      return (
+        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black shadow-xs">
+          <Boxes className="w-5 h-5 stroke-[1.75]" />
+        </div>
+      );
+    }
+    return (
+      <div className="w-12 h-12 rounded-full bg-[#f4f4f4] flex items-center justify-center text-black">
+        <PenTool className="w-5 h-5 stroke-[1.75]" />
+      </div>
+    );
+  };
 
   return (
-    <Section id="pricing" className="bg-white py-20 sm:py-28 transition-colors">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-12">
+    <section id="pricing" className="w-full bg-white py-20 sm:py-28 lg:py-32 select-none">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12">
         {/* Header Block */}
-        <div className="flex flex-col items-center gap-4 px-4 text-center sm:gap-6 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand/10 text-brand border border-brand/20 text-xs font-bold tracking-wider uppercase">
-            <Layers className="size-3.5" />
-            <span>Transparent Pricing</span>
-          </div>
-
-          <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl leading-tight">
-            Plans that work best for your{' '}
-            <span className="relative inline-block text-brand">
-              business
-            </span>
+        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
+          <span className="text-xs sm:text-sm font-semibold tracking-[0.2em] text-black uppercase block mb-3 font-sans">
+            PRICING
+          </span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-black mb-4 font-display">
+            Choose the right plan for you
           </h2>
-
-          <p className="text-sm text-muted-foreground sm:text-base max-w-[620px] leading-relaxed">
-            Select a commercial duration to calculate transparent, instant rates. Powered by AURA Studio OS with zero hidden fees.
+          <p className="text-sm sm:text-base text-neutral-500 font-normal max-w-xl mx-auto leading-relaxed">
+            Find the ideal plan that fits your budget and goals. Make informed choices with ease.
           </p>
+        </div>
 
-          {/* Interactive Duration Selector */}
-          <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-1.5 bg-muted/60 p-1.5 rounded-full border border-border/80 shadow-2xs">
-            {DURATIONS.map((dur) => (
-              <button
-                key={dur.seconds}
-                onClick={() => setDurationSeconds(dur.seconds)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  durationSeconds === dur.seconds
-                    ? 'bg-foreground text-background shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-background/80'
+        {/* Pricing Cards Grid: 3 columns, middle highlighted */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-8 items-stretch max-w-6xl mx-auto">
+          {PLANS.map((plan) => {
+            const isDark = plan.highlighted;
+
+            return (
+              <div
+                key={plan.id}
+                className={`relative flex flex-col justify-between rounded-[28px] p-8 sm:p-10 transition-all duration-300 ${
+                  isDark
+                    ? 'bg-[#141414] text-white shadow-2xl lg:-translate-y-4 lg:scale-[1.03] z-10 border border-neutral-800'
+                    : 'bg-white text-black border border-neutral-200/90 shadow-sm hover:shadow-md'
                 }`}
               >
-                {dur.label}
-              </button>
-            ))}
-          </div>
-        </div>
+                {/* Top Section: Icon, Badge, Price, Description */}
+                <div>
+                  {/* Top Icon */}
+                  <div className="mb-6">{renderIcon(plan.iconType, isDark)}</div>
 
-        {/* 3-Column Launch UI Shadcn Cards */}
-        <div className="w-full grid grid-cols-1 gap-8 md:grid-cols-3 items-stretch">
-          {plans.map((plan) => (
-            <PricingColumn
-              key={plan.name}
-              name={plan.name}
-              icon={plan.icon}
-              description={plan.description}
-              price={plan.price}
-              originalPrice={plan.originalPrice}
-              promotionText={plan.promotionText}
-              priceNote={plan.priceNote}
-              cta={plan.cta}
-              features={plan.features}
-              variant={plan.variant}
-              className={plan.className}
-            />
-          ))}
+                  {/* Badge */}
+                  <div className="mb-6">
+                    <span
+                      className={`inline-block text-[11px] font-bold tracking-wider px-3.5 py-1.5 rounded-full uppercase ${
+                        isDark
+                          ? 'bg-white text-black'
+                          : 'bg-black text-white'
+                      }`}
+                    >
+                      {plan.badge}
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-baseline mb-5">
+                    <span
+                      className={`text-xl sm:text-2xl font-bold mr-1.5 self-start pt-1.5 ${
+                        isDark ? 'text-white' : 'text-black'
+                      }`}
+                    >
+                      $
+                    </span>
+                    <span
+                      className={`text-5xl sm:text-6xl font-extrabold tracking-tight ${
+                        isDark ? 'text-white' : 'text-black'
+                      }`}
+                    >
+                      {plan.price}
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p
+                    className={`text-xs sm:text-sm leading-relaxed mb-8 ${
+                      isDark ? 'text-neutral-300' : 'text-neutral-600'
+                    }`}
+                  >
+                    {plan.description}
+                  </p>
+
+                  {/* Features List */}
+                  <ul className="space-y-4 mb-10">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <div
+                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                            isDark ? 'bg-white text-black' : 'bg-black text-white'
+                          }`}
+                        >
+                          <ArrowRight className="w-2.5 h-2.5 stroke-[2.5]" />
+                        </div>
+                        <span
+                          className={`text-xs sm:text-sm font-medium ${
+                            isDark ? 'text-white' : 'text-neutral-900'
+                          }`}
+                        >
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Bottom CTA Button */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => handleSelectPlan(plan)}
+                    className={`w-full py-3.5 px-6 rounded-full text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${
+                      isDark
+                        ? 'bg-white text-black hover:bg-neutral-200 active:scale-[0.98]'
+                        : 'bg-white text-neutral-900 border border-neutral-300 hover:border-black hover:bg-neutral-50 active:scale-[0.98]'
+                    }`}
+                  >
+                    <span>Get started</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </Section>
+    </section>
   );
 }
-

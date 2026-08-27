@@ -27,6 +27,8 @@ import {
   Download,
   Plus,
   TrendingUp,
+  Database,
+  RefreshCw,
 } from 'lucide-react';
 
 import AdminAuthModal from './AdminAuthModal';
@@ -262,7 +264,174 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
     return initialMockStudioSettings;
   });
 
-  // Save states to LocalStorage on change
+  // -------------------------------------------------------------
+  // MONGODB ATLAS DATABASE INTEGRATION & SYNC
+  // -------------------------------------------------------------
+  const [mongoStatus, setMongoStatus] = useState<{
+    connected: boolean;
+    configured: boolean;
+    database: string;
+    maskedUri: string;
+    pingMs?: number;
+    message?: string;
+    counts?: Record<string, number>;
+  }>({
+    connected: false,
+    configured: false,
+    database: 'aura_studio_db',
+    maskedUri: '',
+  });
+  const [isSyncingMongo, setIsSyncingMongo] = useState<boolean>(false);
+
+  // Fetch MongoDB Database status and all entity data from API
+  const refreshMongoData = async (isInitial = false) => {
+    try {
+      // 1. Check DB Status
+      const statusRes = await fetch('/api/db-status');
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        setMongoStatus(statusData);
+      }
+
+      // 2. Fetch Projects
+      const projRes = await fetch('/api/projects');
+      if (projRes.ok) {
+        const projData = await projRes.json();
+        if (Array.isArray(projData.data) && projData.data.length > 0) {
+          setProjects(projData.data);
+        }
+      }
+
+      // 3. Fetch Services
+      const servRes = await fetch('/api/services');
+      if (servRes.ok) {
+        const servData = await servRes.json();
+        if (Array.isArray(servData.data) && servData.data.length > 0) {
+          setServices(servData.data);
+        }
+      }
+
+      // 4. Fetch Pricing
+      const pricingRes = await fetch('/api/pricing');
+      if (pricingRes.ok) {
+        const pricingData = await pricingRes.json();
+        if (Array.isArray(pricingData.plans) && pricingData.plans.length > 0) {
+          setPricingPlans(pricingData.plans);
+        }
+      }
+
+      // 5. Fetch Messages
+      const msgRes = await fetch('/api/messages');
+      if (msgRes.ok) {
+        const msgData = await msgRes.json();
+        if (Array.isArray(msgData.data) && msgData.data.length > 0) {
+          setMessages(msgData.data);
+        }
+      }
+
+      // 6. Fetch WhatsApp Config
+      const waRes = await fetch('/api/whatsapp');
+      if (waRes.ok) {
+        const waData = await waRes.json();
+        if (waData.config) {
+          setWhatsappConfig((prev) => ({ ...prev, ...waData.config, inquiryLogs: waData.inquiryLogs || prev.inquiryLogs }));
+        }
+      }
+
+      // 7. Fetch Media Assets
+      const mediaRes = await fetch('/api/media');
+      if (mediaRes.ok) {
+        const mediaData = await mediaRes.json();
+        if (Array.isArray(mediaData.data) && mediaData.data.length > 0) {
+          setMediaAssets(mediaData.data);
+        }
+      }
+
+      // 8. Fetch Testimonials
+      const testRes = await fetch('/api/testimonials');
+      if (testRes.ok) {
+        const testData = await testRes.json();
+        if (Array.isArray(testData.data) && testData.data.length > 0) {
+          setTestimonials(testData.data);
+        }
+      }
+
+      // 9. Fetch Team
+      const teamRes = await fetch('/api/team');
+      if (teamRes.ok) {
+        const teamData = await teamRes.json();
+        if (Array.isArray(teamData.data) && teamData.data.length > 0) {
+          setTeam(teamData.data);
+        }
+      }
+
+      // 10. Fetch Articles
+      const artRes = await fetch('/api/articles');
+      if (artRes.ok) {
+        const artData = await artRes.json();
+        if (Array.isArray(artData.data) && artData.data.length > 0) {
+          setArticles(artData.data);
+        }
+      }
+
+      // 11. Fetch Notifications
+      const notifRes = await fetch('/api/notifications');
+      if (notifRes.ok) {
+        const notifData = await notifRes.json();
+        if (Array.isArray(notifData.data) && notifData.data.length > 0) {
+          setNotifications(notifData.data);
+        }
+      }
+
+      // 12. Fetch Settings
+      const setRes = await fetch('/api/settings');
+      if (setRes.ok) {
+        const setData = await setRes.json();
+        if (setData.data) {
+          setStudioSettings(setData.data);
+        }
+      }
+    } catch (err) {
+      console.warn('MongoDB sync note:', err);
+    }
+  };
+
+  // Sync / Seed MongoDB trigger
+  const handleSyncMongo = async (reset = false) => {
+    setIsSyncingMongo(true);
+    try {
+      const res = await fetch('/api/seed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset }),
+      });
+      const data = await res.json();
+      await refreshMongoData();
+      showToast(data.message || 'MongoDB synchronized');
+    } catch (err: any) {
+      showToast('Could not sync MongoDB: ' + err.message);
+    } finally {
+      setIsSyncingMongo(false);
+    }
+  };
+
+  // On component mount, sync with MongoDB API
+  useEffect(() => {
+    let isMounted = true;
+    const initFetch = async () => {
+      try {
+        await refreshMongoData();
+      } catch (err) {
+        if (isMounted) console.warn('Initial mongo fetch error:', err);
+      }
+    };
+    initFetch();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Save states to LocalStorage on change (client cache fallback)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('aura_admin_projects', JSON.stringify(projects));
@@ -346,10 +515,10 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
   }, []);
 
   // -------------------------------------------------------------
-  // ACTION HANDLERS
+  // ACTION HANDLERS WITH MONGODB API PERSISTENCE
   // -------------------------------------------------------------
   // Projects
-  const handleSaveProject = (project: AdminProject) => {
+  const handleSaveProject = async (project: AdminProject) => {
     setProjects((prev) => {
       const idx = prev.findIndex((p) => p.id === project.id);
       if (idx >= 0) {
@@ -359,29 +528,71 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
       }
       return [project, ...prev];
     });
+
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(project),
+      });
+    } catch (err) {
+      console.warn('API save project error:', err);
+    }
   };
 
-  const handleDeleteProject = (id: string) => {
+  const handleDeleteProject = async (id: string) => {
     setProjects((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete project error:', err);
+    }
   };
 
-  const handleToggleProjectPublish = (id: string) => {
+  const handleToggleProjectPublish = async (id: string) => {
+    const target = projects.find((p) => p.id === id);
+    if (!target) return;
+    const newStatus = target.status === 'published' ? 'draft' : 'published';
+    const updated = { ...target, status: newStatus as any };
+
     setProjects((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, status: p.status === 'published' ? 'draft' : 'published' } : p
-      )
+      prev.map((p) => (p.id === id ? updated : p))
     );
+
+    try {
+      await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (err) {
+      console.warn('API toggle publish error:', err);
+    }
     showToast('Project status updated');
   };
 
-  const handleToggleProjectFeatured = (id: string) => {
+  const handleToggleProjectFeatured = async (id: string) => {
+    const target = projects.find((p) => p.id === id);
+    if (!target) return;
+    const updated = { ...target, isFeatured: !target.isFeatured };
+
     setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isFeatured: !p.isFeatured } : p))
+      prev.map((p) => (p.id === id ? updated : p))
     );
+
+    try {
+      await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isFeatured: updated.isFeatured }),
+      });
+    } catch (err) {
+      console.warn('API toggle featured error:', err);
+    }
     showToast('Project featured state updated');
   };
 
-  const handleDuplicateProject = (project: AdminProject) => {
+  const handleDuplicateProject = async (project: AdminProject) => {
     const duplicated: AdminProject = {
       ...project,
       id: 'proj-' + Date.now(),
@@ -394,11 +605,21 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
       updatedAt: new Date().toISOString().split('T')[0],
     };
     setProjects((prev) => [duplicated, ...prev]);
+
+    try {
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(duplicated),
+      });
+    } catch (err) {
+      console.warn('API duplicate project error:', err);
+    }
     showToast('Duplicated project created as draft');
   };
 
   // Services
-  const handleSaveService = (service: AdminService) => {
+  const handleSaveService = async (service: AdminService) => {
     setServices((prev) => {
       const idx = prev.findIndex((s) => s.id === service.id);
       if (idx >= 0) {
@@ -408,21 +629,50 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
       }
       return [...prev, service];
     });
+
+    try {
+      await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(service),
+      });
+    } catch (err) {
+      console.warn('API save service error:', err);
+    }
   };
 
-  const handleDeleteService = (id: string) => {
+  const handleDeleteService = async (id: string) => {
     setServices((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await fetch(`/api/services/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete service error:', err);
+    }
     showToast('Service removed');
   };
 
-  const handleToggleServiceActive = (id: string) => {
+  const handleToggleServiceActive = async (id: string) => {
+    const target = services.find((s) => s.id === id);
+    if (!target) return;
+    const updated = { ...target, isActive: !target.isActive };
+
     setServices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, isActive: !s.isActive } : s))
+      prev.map((s) => (s.id === id ? updated : s))
     );
+
+    try {
+      await fetch(`/api/services/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: updated.isActive }),
+      });
+    } catch (err) {
+      console.warn('API toggle service active error:', err);
+    }
     showToast('Service availability updated');
   };
 
-  const handleDuplicateService = (service: AdminService) => {
+  const handleDuplicateService = async (service: AdminService) => {
     const dup: AdminService = {
       ...service,
       id: 'serv-' + Date.now(),
@@ -430,11 +680,21 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
       displayOrder: services.length + 1,
     };
     setServices((prev) => [...prev, dup]);
+
+    try {
+      await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dup),
+      });
+    } catch (err) {
+      console.warn('API duplicate service error:', err);
+    }
     showToast('Service duplicated');
   };
 
   // Pricing Plans
-  const handleSavePlan = (plan: AdminPricingPlan) => {
+  const handleSavePlan = async (plan: AdminPricingPlan) => {
     setPricingPlans((prev) => {
       const idx = prev.findIndex((p) => p.id === plan.id);
       if (idx >= 0) {
@@ -444,55 +704,118 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
       }
       return [...prev, plan];
     });
+
+    try {
+      await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plans: pricingPlans.map((p) => (p.id === plan.id ? plan : p)) }),
+      });
+    } catch (err) {
+      console.warn('API save pricing plan error:', err);
+    }
   };
 
-  const handleDeletePlan = (id: string) => {
-    setPricingPlans((prev) => prev.filter((p) => p.id !== id));
+  const handleDeletePlan = async (id: string) => {
+    const updatedPlans = pricingPlans.filter((p) => p.id !== id);
+    setPricingPlans(updatedPlans);
+    try {
+      await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plans: updatedPlans }),
+      });
+    } catch (err) {
+      console.warn('API delete plan error:', err);
+    }
     showToast('Pricing plan deleted');
   };
 
-  const handleTogglePlanActive = (id: string) => {
-    setPricingPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+  const handleTogglePlanActive = async (id: string) => {
+    const updatedPlans = pricingPlans.map((p) =>
+      p.id === id ? { ...p, isActive: !p.isActive } : p
     );
+    setPricingPlans(updatedPlans);
+    try {
+      await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plans: updatedPlans }),
+      });
+    } catch (err) {
+      console.warn('API toggle plan active error:', err);
+    }
     showToast('Pricing plan visibility updated');
   };
 
-  const handleTogglePlanFeatured = (id: string) => {
-    setPricingPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isFeatured: !p.isFeatured } : p))
+  const handleTogglePlanFeatured = async (id: string) => {
+    const updatedPlans = pricingPlans.map((p) =>
+      p.id === id ? { ...p, isFeatured: !p.isFeatured } : p
     );
+    setPricingPlans(updatedPlans);
+    try {
+      await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plans: updatedPlans }),
+      });
+    } catch (err) {
+      console.warn('API toggle plan featured error:', err);
+    }
     showToast('Featured plan updated');
   };
 
-  const handleDuplicatePlan = (plan: AdminPricingPlan) => {
+  const handleDuplicatePlan = async (plan: AdminPricingPlan) => {
     const dup: AdminPricingPlan = {
       ...plan,
       id: 'tier-' + Date.now(),
       name: `${plan.name} (Copy)`,
       displayOrder: pricingPlans.length + 1,
     };
-    setPricingPlans((prev) => [...prev, dup]);
+    const updatedPlans = [...pricingPlans, dup];
+    setPricingPlans(updatedPlans);
+    try {
+      await fetch('/api/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plans: updatedPlans }),
+      });
+    } catch (err) {
+      console.warn('API duplicate plan error:', err);
+    }
     showToast('Pricing tier duplicated');
   };
 
   // Messages
-  const handleUpdateMessageStatus = (id: string, status: AdminMessage['status']) => {
+  const handleUpdateMessageStatus = async (id: string, status: AdminMessage['status']) => {
     setMessages((prev) =>
       prev.map((m) => (m.id === id ? { ...m, status } : m))
     );
+    try {
+      await fetch(`/api/messages/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+    } catch (err) {
+      console.warn('API update message status error:', err);
+    }
   };
 
-  const handleAddMessageReply = (id: string, replyText: string) => {
+  const handleAddMessageReply = async (id: string, replyText: string) => {
+    const target = messages.find((m) => m.id === id);
+    if (!target) return;
+
+    const newReply = {
+      id: 'rep-' + Date.now(),
+      sender: 'admin' as const,
+      message: replyText,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== id) return m;
-        const newReply = {
-          id: 'rep-' + Date.now(),
-          sender: 'admin' as const,
-          message: replyText,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
         return {
           ...m,
           status: 'replied' as const,
@@ -500,28 +823,220 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
         };
       })
     );
+
+    try {
+      await fetch(`/api/messages/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'replied',
+          reply: newReply,
+        }),
+      });
+    } catch (err) {
+      console.warn('API reply message error:', err);
+    }
   };
 
-  const handleDeleteMessage = (id: string) => {
+  const handleDeleteMessage = async (id: string) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (selectedDirectMessage?.id === id) {
       setSelectedDirectMessage(null);
     }
+    try {
+      await fetch(`/api/messages/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete message error:', err);
+    }
+  };
+
+  // WhatsApp Config Save
+  const handleSaveWhatsAppConfig = async (updated: AdminWhatsAppConfig) => {
+    setWhatsappConfig(updated);
+    try {
+      await fetch('/api/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+    } catch (err) {
+      console.warn('API save WhatsApp error:', err);
+    }
+  };
+
+  // Media Assets
+  const handleAddMediaAsset = async (asset: AdminMediaAsset) => {
+    setMediaAssets((prev) => [asset, ...prev]);
+    try {
+      await fetch('/api/media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(asset),
+      });
+    } catch (err) {
+      console.warn('API add media error:', err);
+    }
+  };
+
+  const handleDeleteMediaAsset = async (id: string) => {
+    setMediaAssets((prev) => prev.filter((m) => m.id !== id));
+    try {
+      await fetch(`/api/media/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete media error:', err);
+    }
+    showToast('Media asset removed');
+  };
+
+  // Testimonials
+  const handleSaveTestimonial = async (item: AdminTestimonial) => {
+    setTestimonials((prev) => {
+      const idx = prev.findIndex((t) => t.id === item.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = item;
+        return next;
+      }
+      return [...prev, item];
+    });
+
+    try {
+      await fetch('/api/testimonials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
+    } catch (err) {
+      console.warn('API save testimonial error:', err);
+    }
+  };
+
+  const handleDeleteTestimonial = async (id: string) => {
+    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await fetch(`/api/testimonials/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete testimonial error:', err);
+    }
+    showToast('Testimonial deleted');
+  };
+
+  // Team
+  const handleSaveTeamMember = async (member: AdminTeamMember) => {
+    setTeam((prev) => {
+      const idx = prev.findIndex((t) => t.id === member.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = member;
+        return next;
+      }
+      return [...prev, member];
+    });
+
+    try {
+      await fetch('/api/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(member),
+      });
+    } catch (err) {
+      console.warn('API save team member error:', err);
+    }
+  };
+
+  const handleDeleteTeamMember = async (id: string) => {
+    setTeam((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await fetch(`/api/team/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete team member error:', err);
+    }
+    showToast('Team member removed');
+  };
+
+  // Articles
+  const handleSaveArticle = async (art: AdminArticle) => {
+    setArticles((prev) => {
+      const idx = prev.findIndex((a) => a.id === art.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = art;
+        return next;
+      }
+      return [art, ...prev];
+    });
+
+    try {
+      await fetch('/api/articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(art),
+      });
+    } catch (err) {
+      console.warn('API save article error:', err);
+    }
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    setArticles((prev) => prev.filter((a) => a.id !== id));
+    try {
+      await fetch(`/api/articles/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete article error:', err);
+    }
+    showToast('Article deleted');
+  };
+
+  // Studio Settings
+  const handleSaveStudioSettings = async (updated: AdminStudioSettings) => {
+    setStudioSettings(updated);
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+    } catch (err) {
+      console.warn('API save settings error:', err);
+    }
   };
 
   // Notifications
-  const handleMarkNotificationRead = (id: string) => {
+  const handleMarkNotificationRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+    try {
+      await fetch(`/api/notifications/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true }),
+      });
+    } catch (err) {
+      console.warn('API update notif error:', err);
+    }
   };
 
-  const handleMarkAllNotificationsRead = () => {
+  const handleMarkAllNotificationsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      await fetch('/api/notifications', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isRead: true }),
+      });
+    } catch (err) {
+      console.warn('API mark all notifs read error:', err);
+    }
   };
 
-  const handleDeleteNotification = (id: string) => {
+  const handleDeleteNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('API delete notif error:', err);
+    }
   };
 
   // Export / Backup Full Snapshot
@@ -549,7 +1064,7 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
     showToast('Full CMS backup snapshot downloaded');
   };
 
-  const handleResetFullData = () => {
+  const handleResetFullData = async () => {
     setProjects(initialMockProjects);
     setServices(initialMockServices);
     setPricingPlans(initialMockPricingPlans);
@@ -574,6 +1089,9 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
       localStorage.removeItem('aura_admin_notifications');
       localStorage.removeItem('aura_admin_settings');
     }
+
+    // Reset and seed MongoDB
+    await handleSyncMongo(true);
   };
 
   // -------------------------------------------------------------
@@ -871,8 +1389,28 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
               </div>
             </div>
 
-            {/* Top Right Header Controls: Search, Bell, Profile Pill */}
-            <div className="flex items-center gap-3">
+            {/* Top Right Header Controls: MongoDB Status, Search, Bell, Profile Pill */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {/* MongoDB Atlas Status Pill */}
+              <button
+                onClick={() => {
+                  setActiveTab('Settings');
+                  showToast(mongoStatus.connected ? 'MongoDB Atlas is active & synced' : 'MongoDB: Configure URI in Settings or .env');
+                }}
+                className={`h-9 px-3 rounded-full border flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
+                  mongoStatus.connected
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                }`}
+                title={mongoStatus.connected ? `MongoDB Atlas Connected: ${mongoStatus.database}` : 'MongoDB Disconnected / Local Mode'}
+              >
+                <Database className={`w-3.5 h-3.5 ${mongoStatus.connected ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <span className="hidden sm:inline">
+                  {mongoStatus.connected ? 'MongoDB Live' : 'MongoDB Setup'}
+                </span>
+                <span className={`w-2 h-2 rounded-full ${mongoStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              </button>
+
               {/* Search Circle Button */}
               <button
                 onClick={() => setIsSearchOpen(true)}
@@ -1021,7 +1559,7 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
           {activeTab === 'WhatsApp' && (
             <WhatsAppCMS
               config={whatsappConfig}
-              onSaveConfig={(updated) => setWhatsappConfig(updated)}
+              onSaveConfig={handleSaveWhatsAppConfig}
               showToast={showToast}
             />
           )}
@@ -1029,11 +1567,8 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
           {activeTab === 'Media' && (
             <MediaLibraryCMS
               mediaAssets={mediaAssets}
-              onAddMediaAsset={(asset) => setMediaAssets([asset, ...mediaAssets])}
-              onDeleteMediaAsset={(id) => {
-                setMediaAssets((prev) => prev.filter((m) => m.id !== id));
-                showToast('Media asset removed');
-              }}
+              onAddMediaAsset={handleAddMediaAsset}
+              onDeleteMediaAsset={handleDeleteMediaAsset}
               showToast={showToast}
             />
           )}
@@ -1041,26 +1576,15 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
           {activeTab === 'Testimonials' && (
             <TestimonialsCMS
               testimonials={testimonials}
-              onSaveTestimonial={(item) => {
-                setTestimonials((prev) => {
-                  const idx = prev.findIndex((t) => t.id === item.id);
-                  if (idx >= 0) {
-                    const next = [...prev];
-                    next[idx] = item;
-                    return next;
-                  }
-                  return [...prev, item];
-                });
-              }}
-              onDeleteTestimonial={(id) => {
-                setTestimonials((prev) => prev.filter((t) => t.id !== id));
-                showToast('Testimonial deleted');
-              }}
-              onToggleActive={(id) => {
-                setTestimonials((prev) =>
-                  prev.map((t) => (t.id === id ? { ...t, isActive: !t.isActive } : t))
-                );
-                showToast('Testimonial status updated');
+              onSaveTestimonial={handleSaveTestimonial}
+              onDeleteTestimonial={handleDeleteTestimonial}
+              onToggleActive={async (id) => {
+                const target = testimonials.find((t) => t.id === id);
+                if (target) {
+                  const updated = { ...target, isActive: !target.isActive };
+                  await handleSaveTestimonial(updated);
+                  showToast('Testimonial status updated');
+                }
               }}
               showToast={showToast}
             />
@@ -1069,26 +1593,15 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
           {activeTab === 'Team' && (
             <TeamCMS
               team={team}
-              onSaveMember={(member) => {
-                setTeam((prev) => {
-                  const idx = prev.findIndex((t) => t.id === member.id);
-                  if (idx >= 0) {
-                    const next = [...prev];
-                    next[idx] = member;
-                    return next;
-                  }
-                  return [...prev, member];
-                });
-              }}
-              onDeleteMember={(id) => {
-                setTeam((prev) => prev.filter((t) => t.id !== id));
-                showToast('Team member removed');
-              }}
-              onToggleActive={(id) => {
-                setTeam((prev) =>
-                  prev.map((t) => (t.id === id ? { ...t, isActive: !t.isActive } : t))
-                );
-                showToast('Team member visibility updated');
+              onSaveMember={handleSaveTeamMember}
+              onDeleteMember={handleDeleteTeamMember}
+              onToggleActive={async (id) => {
+                const target = team.find((t) => t.id === id);
+                if (target) {
+                  const updated = { ...target, isActive: !target.isActive };
+                  await handleSaveTeamMember(updated);
+                  showToast('Team member visibility updated');
+                }
               }}
               showToast={showToast}
             />
@@ -1097,30 +1610,16 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
           {activeTab === 'Articles' && (
             <ArticlesCMS
               articles={articles}
-              onSaveArticle={(art) => {
-                setArticles((prev) => {
-                  const idx = prev.findIndex((a) => a.id === art.id);
-                  if (idx >= 0) {
-                    const next = [...prev];
-                    next[idx] = art;
-                    return next;
-                  }
-                  return [art, ...prev];
-                });
-              }}
-              onDeleteArticle={(id) => {
-                setArticles((prev) => prev.filter((a) => a.id !== id));
-                showToast('Article deleted');
-              }}
-              onToggleStatus={(id) => {
-                setArticles((prev) =>
-                  prev.map((a) =>
-                    a.id === id
-                      ? { ...a, status: a.status === 'published' ? 'draft' : 'published' }
-                      : a
-                  )
-                );
-                showToast('Article status toggled');
+              onSaveArticle={handleSaveArticle}
+              onDeleteArticle={handleDeleteArticle}
+              onToggleStatus={async (id) => {
+                const target = articles.find((a) => a.id === id);
+                if (target) {
+                  const newStatus = target.status === 'published' ? 'draft' : 'published';
+                  const updated = { ...target, status: newStatus as any };
+                  await handleSaveArticle(updated);
+                  showToast('Article status toggled');
+                }
               }}
               showToast={showToast}
             />
@@ -1140,7 +1639,7 @@ export default function AuraAdminDashboard({ initialTab = 'Dashboard' }: AuraAdm
           {activeTab === 'Settings' && (
             <SettingsCMS
               settings={studioSettings}
-              onSaveSettings={(updated) => setStudioSettings(updated)}
+              onSaveSettings={handleSaveStudioSettings}
               onExportAllData={handleExportFullSnapshot}
               onResetAllData={handleResetFullData}
               showToast={showToast}

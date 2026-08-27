@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ThreeDImageRing from './ThreeDImageRing';
-import { ArrowRight, ArrowUpRight, XIcon } from './Icons';
+import { XIcon } from './Icons';
 
 const SHOWCASE_PROJECTS = [
   {
@@ -71,38 +71,85 @@ const SHOWCASE_PROJECTS = [
   },
 ];
 
-const PROJECT_IMAGE_URLS = SHOWCASE_PROJECTS.map((p) => p.image);
-
 export default function LandingProjectShowcase() {
   const [selectedProject, setSelectedProject] = useState<typeof SHOWCASE_PROJECTS[0] | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const initialRotation = 180;
+  // One full revolution (360 degrees) across the scroll track
+  const currentRotation = useMemo(() => {
+    return initialRotation - scrollProgress * 360;
+  }, [scrollProgress]);
+
+  // Calculate active project facing front
+  const activeIndex = useMemo(() => {
+    const anglePerItem = 360 / SHOWCASE_PROJECTS.length;
+    const normalized = ((- (currentRotation - initialRotation)) % 360 + 360) % 360;
+    const idx = Math.round(normalized / anglePerItem) % SHOWCASE_PROJECTS.length;
+    return idx;
+  }, [currentRotation]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight || 800;
+      const totalScrollableDistance = rect.height - windowHeight;
+
+      if (totalScrollableDistance <= 0) return;
+
+      // When the top of track hits top of viewport (rect.top <= 0)
+      const scrolled = -rect.top;
+      const progress = Math.min(Math.max(scrolled / totalScrollableDistance, 0), 1);
+
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []);
 
   return (
-    <section id="works" className="relative w-full bg-white text-[#111111] py-16 sm:py-20 lg:py-24 overflow-hidden select-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col items-center">
+    <div
+      id="works"
+      ref={trackRef}
+      className="relative w-full h-[220vh] sm:h-[240vh] bg-white select-none"
+    >
+      {/* Sticky Fullscreen 3D Stage */}
+      <section className="sticky top-0 h-screen w-full bg-white text-[#111111] flex flex-col items-center justify-between py-10 sm:py-14 px-4 sm:px-8 overflow-hidden z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f1f0ee] text-xs font-semibold text-[#111111]/70 mb-3.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e65c00] animate-pulse" />
+        <div className="text-center max-w-2xl mx-auto pt-2 sm:pt-4 z-20">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f4f4f4] text-xs font-semibold text-black mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
             <span>Interactive 3D Showcase</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#111111] tracking-tight font-display">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-[#111111] tracking-tight font-display">
             Selected 3D Works & Motion
           </h2>
-          <p className="mt-3 text-sm sm:text-base text-[#666666] leading-relaxed">
-            Drag, spin, and interact with our cylindrical 3D visual archive. Experience dynamic depth with smooth deceleration inertia.
+          <p className="mt-2 text-xs sm:text-sm text-neutral-500 max-w-md mx-auto leading-relaxed">
+            Scroll down to rotate through our complete portfolio of brand visuals and 3D commercials.
           </p>
         </div>
 
         {/* 3D Image Ring Stage */}
-        <div className="w-full h-[460px] sm:h-[540px] lg:h-[600px] relative flex items-center justify-center">
+        <div className="w-full flex-1 relative flex items-center justify-center min-h-[360px] sm:min-h-[440px] my-auto">
           <ThreeDImageRing
-            images={PROJECT_IMAGE_URLS}
+            projects={SHOWCASE_PROJECTS}
+            onSelectProject={(index) => setSelectedProject(SHOWCASE_PROJECTS[index])}
+            controlledRotation={currentRotation}
             width={280}
             perspective={1800}
-            imageDistance={460}
-            initialRotation={180}
+            imageDistance={480}
+            initialRotation={initialRotation}
             animationDuration={1.2}
             staggerDelay={0.08}
             hoverOpacity={0.4}
@@ -111,20 +158,51 @@ export default function LandingProjectShowcase() {
             inertiaTimeConstant={320}
             inertiaVelocityMultiplier={22}
             mobileBreakpoint={768}
-            mobileScaleFactor={0.75}
-            imageClassName="cursor-grab active:cursor-grabbing hover:scale-105 transition-transform duration-300 rounded-2xl shadow-xl border border-white/40"
+            mobileScaleFactor={0.72}
           />
         </div>
 
-      </div>
+        {/* Bottom Progress Bar & Active Project Label */}
+        <div className="w-full max-w-md mx-auto z-20 flex flex-col items-center gap-2.5 pb-2">
+          {/* Active Project Pill */}
+          <div className="flex items-center gap-2 bg-black text-white px-4 py-1.5 rounded-full text-xs font-medium shadow-md">
+            <span className="text-neutral-400 font-mono text-[10px]">
+              0{activeIndex + 1} / 0{SHOWCASE_PROJECTS.length}
+            </span>
+            <span className="w-1 h-1 rounded-full bg-white/40" />
+            <span className="font-semibold text-white tracking-wide">
+              {SHOWCASE_PROJECTS[activeIndex]?.name}
+            </span>
+          </div>
 
-      {/* Video Modal if clicked */}
+          {/* Scroll Rotation Progress Track */}
+          <div className="w-full flex items-center gap-3">
+            <span className="text-[10px] font-mono text-neutral-400">0°</span>
+            <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden border border-neutral-200/80">
+              <div
+                className="h-full bg-black rounded-full transition-all duration-75 ease-out"
+                style={{ width: `${Math.round(scrollProgress * 100)}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-mono text-neutral-400">360°</span>
+          </div>
+
+          <span className="text-[11px] text-neutral-400 font-normal">
+            {scrollProgress >= 0.98
+              ? '✦ 360° Complete — Continue scrolling'
+              : 'Scroll to complete full 360° rotation'}
+          </span>
+        </div>
+
+      </section>
+
+      {/* Video / Project Modal */}
       {selectedProject && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-[#e6e5e2] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 bg-[#faf9f6] border-b border-[#e6e5e2]">
               <div className="flex flex-col text-left">
-                <span className="text-xs font-mono text-[#e65c00] uppercase tracking-wider font-semibold">
+                <span className="text-xs font-mono text-black uppercase tracking-wider font-semibold">
                   {selectedProject.category}
                 </span>
                 <span className="text-base font-bold text-[#111111] tracking-wide font-display">
@@ -150,9 +228,15 @@ export default function LandingProjectShowcase() {
                 allowFullScreen
               />
             </div>
+
+            <div className="p-6 bg-white flex flex-col gap-2">
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                {selectedProject.description}
+              </p>
+            </div>
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }

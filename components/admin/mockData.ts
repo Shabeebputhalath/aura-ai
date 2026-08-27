@@ -404,7 +404,7 @@ export const INITIAL_MESSAGES: AdminMessage[] = [
 ];
 
 export const INITIAL_WHATSAPP_CONFIG: AdminWhatsAppConfig = {
-  phoneNumber: '+91 94002 96191',
+  phoneNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+91 88912 52902',
   isEnabled: true,
   defaultGreeting: 'Hello! Welcome to AURA AI Studio. Redefining Commercials with AI.',
   preFilledPrompt: 'Hi AURA AI team! I am interested in creating an AI video commercial for my brand. Let us discuss details.',
@@ -669,7 +669,7 @@ export const INITIAL_SETTINGS: AdminStudioSettings = {
   studioName: 'AURA AI Studio',
   tagline: 'Redefining Commercials with AI',
   primaryEmail: 'contact@aura-ai.studio',
-  primaryPhone: '+91 94002 96191',
+  primaryPhone: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+91 88912 52902',
   location: 'AURA AI Productions, Creative Quarter, Bandra West, Mumbai, India',
   currency: 'INR (₹)',
   primaryColor: '#0C0E12',
@@ -678,6 +678,8 @@ export const INITIAL_SETTINGS: AdminStudioSettings = {
   seoDescription: 'Redefining commercial production with artificial intelligence. 4K product ads, cinematic storytelling, and visual effects for luxury and scaleup brands.',
   ogImageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200',
 };
+
+export const INITIAL_STUDIO_SETTINGS = INITIAL_SETTINGS;
 
 // Aliases for component imports
 export const initialMockAdminUser = INITIAL_ADMIN_USER;

@@ -147,27 +147,6 @@ export default function FloatingWhatsApp() {
 
       {/* Floating Trigger Button Group */}
       <div className="flex items-center gap-2.5">
-        {/* Subtle Greeting Bubble tooltip when closed */}
-        {!isOpen && hasPrompted && (
-          <div
-            onClick={() => setIsOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 bg-[#111111]/90 backdrop-blur-md border border-white/10 text-white rounded-2xl shadow-xl text-xs font-medium cursor-pointer hover:bg-black transition-all hover:scale-102 animate-in fade-in slide-in-from-right-3 duration-300"
-          >
-            <span className="w-2 h-2 rounded-full bg-[#25D366] animate-ping shrink-0" />
-            <span className="truncate max-w-[180px]">Chat on WhatsApp</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setHasPrompted(false);
-              }}
-              className="ml-1 text-slate-400 hover:text-white p-0.5 rounded"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
         {/* WhatsApp Round Floating Action Button */}
         <button
           id="btn-whatsapp-floating"
@@ -175,7 +154,6 @@ export default function FloatingWhatsApp() {
             if (isOpen) {
               setIsOpen(false);
             } else {
-              // Direct WhatsApp or open popover
               handleDirectWhatsAppClick();
             }
           }}

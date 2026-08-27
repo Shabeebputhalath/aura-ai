@@ -13,7 +13,7 @@ export interface WhatsAppConfig {
 }
 
 export const DEFAULT_WHATSAPP_CONFIG: WhatsAppConfig = {
-  phoneNumber: '+91 94002 96191',
+  phoneNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+91 88912 52902',
   isEnabled: true,
   defaultGreeting: 'Hello! Welcome to AURA AI Studio. Redefining Commercials with AI.',
   preFilledPrompt: 'Hi AURA AI Studio! I would like to create an AI video commercial for my brand. Let us discuss details.',
@@ -26,13 +26,13 @@ export const DEFAULT_WHATSAPP_CONFIG: WhatsAppConfig = {
 };
 
 export function cleanPhoneNumber(phone?: string): string {
-  if (!phone) return '919400296191';
-  const cleaned = phone.replace(/[^0-9]/g, '');
+  const target = phone || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918891252902';
+  const cleaned = target.replace(/[^0-9]/g, '');
   // If no country code provided and 10 digits (India default), prepend 91
   if (cleaned.length === 10) {
     return `91${cleaned}`;
   }
-  return cleaned || '919400296191';
+  return cleaned || '918891252902';
 }
 
 export function getActiveWhatsAppConfig(): WhatsAppConfig {
@@ -71,6 +71,19 @@ export function recordWhatsAppInquiry(topic: string, sourcePage: string) {
     config.inquiryLogs = [newLog, ...logs.slice(0, 49)];
     localStorage.setItem('aura_admin_whatsapp', JSON.stringify(config));
     window.dispatchEvent(new Event('aura_admin_whatsapp_updated'));
+
+    // Asynchronously log to MongoDB collection via API
+    fetch('/api/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'log_inquiry',
+        sender: 'Website Visitor',
+        phone: 'Direct WhatsApp',
+        topic,
+        sourcePage,
+      }),
+    }).catch((err) => console.warn('Could not sync WhatsApp log to MongoDB:', err));
   } catch (e) {
     console.error('Error logging WhatsApp inquiry:', e);
   }
