@@ -32,11 +32,36 @@ if (process.env.NODE_ENV !== 'production') {
 export const DEFAULT_DB_NAME = process.env.MONGODB_DB || 'aura_studio_db';
 
 /**
+ * Validates whether a MongoDB URI string is syntactically valid and not a placeholder
+ */
+export function isValidMongoUri(uri: string | undefined | null): boolean {
+  if (!uri || typeof uri !== 'string') return false;
+  const trimmed = uri.trim();
+  if (!trimmed) return false;
+  if (!trimmed.startsWith('mongodb://') && !trimmed.startsWith('mongodb+srv://')) {
+    return false;
+  }
+  // Check for common template placeholders or invalid characters
+  if (
+    trimmed.includes('<') ||
+    trimmed.includes('>') ||
+    trimmed.includes('<username>') ||
+    trimmed.includes('<password>') ||
+    trimmed.includes('<cluster>') ||
+    trimmed.includes('your_username') ||
+    trimmed.includes('your_password')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Checks if the MongoDB URI is configured in process.env
  */
 export function isMongoConfigured(): boolean {
   const uri = process.env.MONGODB_URI;
-  return Boolean(uri && uri.trim().length > 0 && !uri.includes('<username>'));
+  return isValidMongoUri(uri);
 }
 
 /**
@@ -44,7 +69,7 @@ export function isMongoConfigured(): boolean {
  */
 export function getMaskedMongoUri(): string {
   const uri = process.env.MONGODB_URI || '';
-  if (!uri) return 'Not Configured (Using Memory/Local Fallback)';
+  if (!uri || !isMongoConfigured()) return 'Not Configured (Using Memory/Local Fallback)';
   try {
     return uri.replace(/(mongodb(?:\+srv)?:\/\/[^:]+:)([^@]+)(@.+)/i, '$1••••••••$3');
   } catch {
@@ -54,12 +79,12 @@ export function getMaskedMongoUri(): string {
 
 /**
  * Connect to MongoDB and return the MongoClient and Db instance.
- * Uses lazy connection and caching.
+ * Uses lazy connection, caching, and safe fallback handling.
  */
 export async function getMongoDb(): Promise<{ client: MongoClient; db: Db } | null> {
   const uri = process.env.MONGODB_URI;
 
-  if (!uri || !isMongoConfigured()) {
+  if (!isValidMongoUri(uri)) {
     return null;
   }
 
@@ -69,31 +94,46 @@ export async function getMongoDb(): Promise<{ client: MongoClient; db: Db } | nu
 
   if (!mongoCache.promise) {
     const dbName = process.env.MONGODB_DB || DEFAULT_DB_NAME;
-    const client = new MongoClient(uri, {
-      connectTimeoutMS: 8000,
-      serverSelectionTimeoutMS: 8000,
-      maxPoolSize: 10,
-    });
-
-    mongoCache.promise = client
-      .connect()
-      .then((connectedClient) => {
-        const db = connectedClient.db(dbName);
-        return { client: connectedClient, db };
-      })
-      .catch((err) => {
-        console.error('Failed to connect to MongoDB:', err);
-        mongoCache.promise = null;
-        throw err;
+    try {
+      const client = new MongoClient(uri!, {
+        connectTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 10,
       });
+
+      mongoCache.promise = client
+        .connect()
+        .then((connectedClient) => {
+          const db = connectedClient.db(dbName);
+          return { client: connectedClient, db };
+        })
+        .catch((err) => {
+          console.warn('MongoDB connection unavailable (using fallback data):', err?.message || err);
+          mongoCache.promise = null;
+          mongoCache.conn = null;
+          return null as any;
+        });
+    } catch (parseOrInitErr: any) {
+      console.warn('MongoDB initialization skipped (invalid connection string):', parseOrInitErr?.message || parseOrInitErr);
+      mongoCache.promise = null;
+      mongoCache.conn = null;
+      return null;
+    }
   }
 
   try {
-    mongoCache.conn = await mongoCache.promise;
+    const result = await mongoCache.promise;
+    if (!result) {
+      mongoCache.promise = null;
+      mongoCache.conn = null;
+      return null;
+    }
+    mongoCache.conn = result;
     return mongoCache.conn;
   } catch (err) {
     mongoCache.promise = null;
-    throw err;
+    mongoCache.conn = null;
+    return null;
   }
 }
 

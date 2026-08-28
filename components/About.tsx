@@ -52,9 +52,9 @@ export default function About({ ready = true }: AboutProps) {
       className="relative w-full min-h-[85vh] lg:min-h-screen bg-white text-[#111111] flex flex-col items-center justify-center py-20 sm:py-28 lg:py-32 px-6 sm:px-12 lg:px-20 overflow-hidden select-none"
     >
       {/* -------------------------------------------------------------
-          1. FOUR COLORFUL CORNER BRACKETS (ACCORDING TO DESIGN)
+          1. FOUR MONOCHROME CORNER BRACKETS (BLACK & WHITE THEME)
       -------------------------------------------------------------- */}
-      {/* Top-Left: Red / Coral Bracket */}
+      {/* Top-Left: Matte Deep Black Bracket */}
       <div className="absolute top-4 left-4 sm:top-8 sm:left-8 lg:top-12 lg:left-14 pointer-events-none z-10">
         <svg
           width="80"
@@ -66,15 +66,15 @@ export default function About({ ready = true }: AboutProps) {
         >
           <path
             d="M 8 76 L 8 40 C 8 22.327 22.327 8 40 8 L 76 8"
-            stroke="#EF3842"
-            strokeWidth="11"
+            stroke="#111111"
+            strokeWidth="10"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
       </div>
 
-      {/* Top-Right: Deep Cobalt Blue Bracket */}
+      {/* Top-Right: Matte Deep Black Bracket */}
       <div className="absolute top-4 right-4 sm:top-8 sm:right-8 lg:top-12 lg:right-14 pointer-events-none z-10">
         <svg
           width="80"
@@ -86,15 +86,15 @@ export default function About({ ready = true }: AboutProps) {
         >
           <path
             d="M 4 8 L 40 8 C 57.673 8 72 22.327 72 40 L 72 76"
-            stroke="#1D70B8"
-            strokeWidth="11"
+            stroke="#111111"
+            strokeWidth="10"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
       </div>
 
-      {/* Bottom-Left: Teal / Cyan Bracket */}
+      {/* Bottom-Left: Matte Deep Black Bracket */}
       <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 lg:bottom-12 lg:left-14 pointer-events-none z-10">
         <svg
           width="80"
@@ -106,15 +106,15 @@ export default function About({ ready = true }: AboutProps) {
         >
           <path
             d="M 8 4 L 8 40 C 8 57.673 22.327 72 40 72 L 76 72"
-            stroke="#00A896"
-            strokeWidth="11"
+            stroke="#111111"
+            strokeWidth="10"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
       </div>
 
-      {/* Bottom-Right: Warm Amber / Orange Bracket */}
+      {/* Bottom-Right: Matte Deep Black Bracket */}
       <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 lg:bottom-12 lg:right-14 pointer-events-none z-10">
         <svg
           width="80"
@@ -126,8 +126,8 @@ export default function About({ ready = true }: AboutProps) {
         >
           <path
             d="M 4 72 L 40 72 C 57.673 72 72 57.673 72 40 L 72 4"
-            stroke="#F58220"
-            strokeWidth="11"
+            stroke="#111111"
+            strokeWidth="10"
             strokeLinecap="round"
             strokeLinejoin="round"
           />

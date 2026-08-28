@@ -234,6 +234,7 @@ export default function ContactSection({ onOpenMenu, isStandalonePage = false }:
                     name="service"
                     value={formData.service}
                     onChange={handleChange}
+                    suppressHydrationWarning
                     className="w-full bg-transparent border-b border-[#e2e2de] focus:border-[#111111] pb-3 text-sm text-[#888888] focus:text-[#111111] outline-none transition-colors cursor-pointer appearance-none"
                   >
                     <option value="" disabled className="text-[#888888]">

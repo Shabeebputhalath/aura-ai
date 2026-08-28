@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import {
   getActiveWhatsAppConfig,
@@ -10,33 +10,44 @@ import {
   DEFAULT_WHATSAPP_CONFIG,
 } from '@/lib/whatsapp';
 
+function subscribe(callback: () => void) {
+  window.addEventListener('aura_admin_whatsapp_updated', callback);
+  window.addEventListener('storage', callback);
+  return () => {
+    window.removeEventListener('aura_admin_whatsapp_updated', callback);
+    window.removeEventListener('storage', callback);
+  };
+}
+
 export default function FloatingWhatsApp() {
-  const [config, setConfig] = useState<WhatsAppConfig>(() => getActiveWhatsAppConfig());
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
+  const config = useSyncExternalStore(
+    subscribe,
+    getActiveWhatsAppConfig,
+    () => DEFAULT_WHATSAPP_CONFIG
+  );
+
   const [isOpen, setIsOpen] = useState(false);
   const [hasPrompted, setHasPrompted] = useState(false);
   const [customMsg, setCustomMsg] = useState('');
 
   useEffect(() => {
-    const handleConfigUpdate = () => {
-      setConfig(getActiveWhatsAppConfig());
-    };
-
-    window.addEventListener('aura_admin_whatsapp_updated', handleConfigUpdate);
-    window.addEventListener('storage', handleConfigUpdate);
-
     // Auto show teaser bubble after 4 seconds
     const timer = setTimeout(() => {
       setHasPrompted(true);
     }, 4000);
 
     return () => {
-      window.removeEventListener('aura_admin_whatsapp_updated', handleConfigUpdate);
-      window.removeEventListener('storage', handleConfigUpdate);
       clearTimeout(timer);
     };
   }, []);
 
-  if (!config.isEnabled) return null;
+  if (!isClient || !config.isEnabled) return null;
 
   const handleDirectWhatsAppClick = () => {
     recordWhatsAppInquiry('Direct WhatsApp Floating Button', window.location.pathname || 'Homepage');

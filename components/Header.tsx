@@ -15,8 +15,8 @@ export default function Header({ ready, onOpenMenu, onOpenModal, scrollTo, curre
   const [logoHover, setLogoHover] = useState(false);
   const [menuHover, setMenuHover] = useState(false);
 
-  const navItems: { label: string; id: string; current?: boolean; isModal?: boolean; hasDropdown?: boolean }[] = [
-    { label: 'Home', id: 'home', current: true },
+  const navItems: { label: string; id: string; isModal?: boolean; hasDropdown?: boolean }[] = [
+    { label: 'Home', id: 'home' },
     { label: 'Work', id: 'works' },
     { label: 'About', id: 'about' },
     { label: 'Contact', id: 'contact' },

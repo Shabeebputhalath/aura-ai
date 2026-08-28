@@ -82,14 +82,6 @@ export default function LandingProjectShowcase() {
     return initialRotation - scrollProgress * 360;
   }, [scrollProgress]);
 
-  // Calculate active project facing front
-  const activeIndex = useMemo(() => {
-    const anglePerItem = 360 / SHOWCASE_PROJECTS.length;
-    const normalized = ((- (currentRotation - initialRotation)) % 360 + 360) % 360;
-    const idx = Math.round(normalized / anglePerItem) % SHOWCASE_PROJECTS.length;
-    return idx;
-  }, [currentRotation]);
-
   useEffect(() => {
     const handleScroll = () => {
       if (!trackRef.current) return;
@@ -162,19 +154,8 @@ export default function LandingProjectShowcase() {
           />
         </div>
 
-        {/* Bottom Progress Bar & Active Project Label */}
+        {/* Bottom Progress Bar */}
         <div className="w-full max-w-md mx-auto z-20 flex flex-col items-center gap-2.5 pb-2">
-          {/* Active Project Pill */}
-          <div className="flex items-center gap-2 bg-black text-white px-4 py-1.5 rounded-full text-xs font-medium shadow-md">
-            <span className="text-neutral-400 font-mono text-[10px]">
-              0{activeIndex + 1} / 0{SHOWCASE_PROJECTS.length}
-            </span>
-            <span className="w-1 h-1 rounded-full bg-white/40" />
-            <span className="font-semibold text-white tracking-wide">
-              {SHOWCASE_PROJECTS[activeIndex]?.name}
-            </span>
-          </div>
-
           {/* Scroll Rotation Progress Track */}
           <div className="w-full flex items-center gap-3">
             <span className="text-[10px] font-mono text-neutral-400">0°</span>

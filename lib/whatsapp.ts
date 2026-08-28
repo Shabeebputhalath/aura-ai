@@ -35,21 +35,31 @@ export function cleanPhoneNumber(phone?: string): string {
   return cleaned || '918891252902';
 }
 
+let cachedRawWhatsAppConfig: string | null | undefined = undefined;
+let cachedParsedWhatsAppConfig: WhatsAppConfig = DEFAULT_WHATSAPP_CONFIG;
+
 export function getActiveWhatsAppConfig(): WhatsAppConfig {
   if (typeof window === 'undefined') return DEFAULT_WHATSAPP_CONFIG;
   try {
     const saved = localStorage.getItem('aura_admin_whatsapp');
+    if (saved === cachedRawWhatsAppConfig) {
+      return cachedParsedWhatsAppConfig;
+    }
+    cachedRawWhatsAppConfig = saved;
     if (saved) {
       const parsed = JSON.parse(saved);
-      return {
+      cachedParsedWhatsAppConfig = {
         ...DEFAULT_WHATSAPP_CONFIG,
         ...parsed,
       };
+    } else {
+      cachedParsedWhatsAppConfig = DEFAULT_WHATSAPP_CONFIG;
     }
+    return cachedParsedWhatsAppConfig;
   } catch (e) {
     console.error('Error loading WhatsApp config:', e);
+    return DEFAULT_WHATSAPP_CONFIG;
   }
-  return DEFAULT_WHATSAPP_CONFIG;
 }
 
 export function recordWhatsAppInquiry(topic: string, sourcePage: string) {

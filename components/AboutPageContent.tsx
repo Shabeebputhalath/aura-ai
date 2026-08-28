@@ -53,7 +53,7 @@ export default function AboutPageContent({ ready = true }: AboutPageContentProps
         ref={heroRef}
         className="relative w-full min-h-[88vh] lg:min-h-screen bg-white text-[#111111] flex flex-col items-center justify-center py-16 sm:py-24 px-6 sm:px-12 lg:px-20 overflow-hidden select-none border-b border-[#f0eee9]"
       >
-        {/* Top-Left Corner Bracket (Red / Coral) */}
+        {/* Top-Left Corner Bracket (Monochrome Matte Black) */}
         <div className="absolute top-4 left-4 sm:top-8 sm:left-8 lg:top-10 lg:left-12 pointer-events-none z-10">
           <svg
             width="80"
@@ -65,15 +65,15 @@ export default function AboutPageContent({ ready = true }: AboutPageContentProps
           >
             <path
               d="M 8 76 L 8 40 C 8 22.327 22.327 8 40 8 L 76 8"
-              stroke="#EF3842"
-              strokeWidth="11"
+              stroke="#111111"
+              strokeWidth="10"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
         </div>
 
-        {/* Top-Right Corner Bracket (Cobalt / Blue) */}
+        {/* Top-Right Corner Bracket (Monochrome Matte Black) */}
         <div className="absolute top-4 right-4 sm:top-8 sm:right-8 lg:top-10 lg:right-12 pointer-events-none z-10">
           <svg
             width="80"
@@ -85,15 +85,15 @@ export default function AboutPageContent({ ready = true }: AboutPageContentProps
           >
             <path
               d="M 4 8 L 40 8 C 57.673 8 72 22.327 72 40 L 72 76"
-              stroke="#1D70B8"
-              strokeWidth="11"
+              stroke="#111111"
+              strokeWidth="10"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
         </div>
 
-        {/* Bottom-Left Corner Bracket (Teal / Cyan) */}
+        {/* Bottom-Left Corner Bracket (Monochrome Matte Black) */}
         <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 lg:bottom-10 lg:left-12 pointer-events-none z-10">
           <svg
             width="80"
@@ -105,15 +105,15 @@ export default function AboutPageContent({ ready = true }: AboutPageContentProps
           >
             <path
               d="M 8 4 L 8 40 C 8 57.673 22.327 72 40 72 L 76 72"
-              stroke="#00A896"
-              strokeWidth="11"
+              stroke="#111111"
+              strokeWidth="10"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
         </div>
 
-        {/* Bottom-Right Corner Bracket (Warm Amber / Orange) */}
+        {/* Bottom-Right Corner Bracket (Monochrome Matte Black) */}
         <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 lg:bottom-10 lg:right-12 pointer-events-none z-10">
           <svg
             width="80"
@@ -125,8 +125,8 @@ export default function AboutPageContent({ ready = true }: AboutPageContentProps
           >
             <path
               d="M 4 72 L 40 72 C 57.673 72 72 57.673 72 40 L 72 4"
-              stroke="#F58220"
-              strokeWidth="11"
+              stroke="#111111"
+              strokeWidth="10"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
